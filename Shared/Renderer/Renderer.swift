@@ -38,6 +38,12 @@ final class Renderer: NSObject, MTKViewDelegate {
     // Audio
     let audioEngine = AudioEngine()
 
+    // Ecosystem
+    let ecosystem: Ecosystem
+    private var creaturePipelineState: MTLRenderPipelineState!
+    private var creatureBuffer: MTLBuffer!
+    private let maxCreatureInstances = 150
+
     // MetalFX upscaling
     private let upscaler: MetalFXUpscaler
     private var blitPipelineState: MTLRenderPipelineState!
@@ -55,11 +61,15 @@ final class Renderer: NSObject, MTKViewDelegate {
         self.neuralWeights = NeuralWeights(device: device)
         self.gameState = GameState()
         self.upscaler = MetalFXUpscaler(device: device, upscaleFactor: 1.5)
+        self.ecosystem = Ecosystem(gridSize: 256, gridSpacing: 0.25)
 
         super.init()
 
-        // Wire terrain sampler for first-person camera following
-        gameState.terrainSampler = TerrainSampler(weightsBuffer: neuralWeights.terrainWeights)
+        // Wire terrain sampler for first-person camera following + ecosystem
+        let sampler = TerrainSampler(weightsBuffer: neuralWeights.terrainWeights)
+        gameState.terrainSampler = sampler
+        ecosystem.setTerrainSampler(sampler)
+        ecosystem.spawn()
 
         metalView.device = device
         metalView.colorPixelFormat = .bgra8Unorm_srgb
@@ -71,6 +81,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         buildPipelines(metalView: metalView)
         buildBlitPipeline(metalView: metalView)
+        buildCreaturePipeline(metalView: metalView)
         buildMesh()
         buildBuffers()
         buildDepthState()
@@ -125,6 +136,33 @@ final class Renderer: NSObject, MTKViewDelegate {
         if let colorKernel = library.makeFunction(name: "updateColorWeights") {
             colorComputePipeline = try? device.makeComputePipelineState(function: colorKernel)
         }
+    }
+
+    private func buildCreaturePipeline(metalView: MTKView) {
+        guard let library = device.makeDefaultLibrary(),
+              let vertexFunc = library.makeFunction(name: "creatureVertex"),
+              let fragFunc = library.makeFunction(name: "creatureFragment") else { return }
+
+        let desc = MTLRenderPipelineDescriptor()
+        desc.label = "Creature Pipeline"
+        desc.vertexFunction = vertexFunc
+        desc.fragmentFunction = fragFunc
+        desc.colorAttachments[0].pixelFormat = metalView.colorPixelFormat
+        desc.depthAttachmentPixelFormat = metalView.depthStencilPixelFormat
+
+        // Additive blending for glowing creatures
+        desc.colorAttachments[0].isBlendingEnabled = true
+        desc.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
+        desc.colorAttachments[0].destinationRGBBlendFactor = .one
+        desc.colorAttachments[0].sourceAlphaBlendFactor = .one
+        desc.colorAttachments[0].destinationAlphaBlendFactor = .one
+
+        creaturePipelineState = try? device.makeRenderPipelineState(descriptor: desc)
+
+        // Creature instance buffer (48 bytes per creature × max)
+        creatureBuffer = device.makeBuffer(length: 48 * maxCreatureInstances,
+                                            options: .storageModeShared)
+        creatureBuffer?.label = "Creature Instances"
     }
 
     private func buildBlitPipeline(metalView: MTKView) {
@@ -404,7 +442,46 @@ final class Renderer: NSObject, MTKViewDelegate {
             indexBufferOffset: 0
         )
 
+        // Draw creatures in same render pass
+        encodeCreatureRender(encoder: encoder)
+
         encoder.endEncoding()
+    }
+
+    private func encodeCreatureRender(encoder: MTLRenderCommandEncoder) {
+        guard let pipeline = creaturePipelineState,
+              let buffer = creatureBuffer else { return }
+
+        let count = min(ecosystem.creatures.count, maxCreatureInstances)
+        guard count > 0 else { return }
+
+        // Update creature instance buffer
+        let ptr = buffer.contents().bindMemory(to: CreatureInstanceGPU.self, capacity: count)
+        let time = gameState.totalTime
+        for i in 0..<count {
+            let c = ecosystem.creatures[i]
+            // Get terrain height at creature position
+            var h: Float = 0
+            if let sampler = gameState.terrainSampler {
+                h = sampler.heightAt(x: c.position.x, z: c.position.y, time: time)
+            }
+            ptr[i] = CreatureInstanceGPU(
+                posX: c.position.x, posY: h + 0.3, posZ: c.position.y,
+                energy: c.energy,
+                colorR: c.speciesColor.x, colorG: c.speciesColor.y, colorB: c.speciesColor.z,
+                age: c.age,
+                heading: c.heading,
+                speed: c.speed,
+                _pad0: 0, _pad1: 0
+            )
+        }
+
+        encoder.setRenderPipelineState(pipeline)
+        encoder.setDepthStencilState(depthStencilState)
+        encoder.setVertexBuffer(uniformBuffer, offset: 0, index: 0)
+        encoder.setVertexBuffer(buffer, offset: 0, index: 1)
+        encoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: 1,
+                               instanceCount: count)
     }
 
     // MARK: - MTKViewDelegate
@@ -418,6 +495,10 @@ final class Renderer: NSObject, MTKViewDelegate {
         updatePlayerState()
         updateResonance()
         updateAudio()
+        ecosystem.update(playerPosition: gameState.cameraPosition,
+                         isInteracting: gameState.isInteracting,
+                         time: gameState.totalTime,
+                         deltaTime: gameState.deltaTime)
 
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let drawable = view.currentDrawable else { return }
@@ -470,6 +551,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
     func resetWorld() {
         neuralWeights.reset()
+        ecosystem.spawn()
     }
 }
 
@@ -536,4 +618,21 @@ struct ResonanceDataGPU {
     var orbCount: Int32 = 0
     var currentTime: Float = 0
     var _padding: (Float, Float) = (0, 0)
+}
+
+// MARK: - Creature instance GPU struct (matches CreatureInstance in CreatureRender.metal)
+
+struct CreatureInstanceGPU {
+    var posX: Float
+    var posY: Float
+    var posZ: Float
+    var energy: Float
+    var colorR: Float
+    var colorG: Float
+    var colorB: Float
+    var age: Float
+    var heading: Float
+    var speed: Float
+    var _pad0: Float
+    var _pad1: Float
 }

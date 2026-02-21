@@ -6,11 +6,6 @@ struct ContentView: View {
     @StateObject private var gameCenterManager = GameCenterManager()
     @State private var renderer: Renderer?
     @State private var showControls = true
-    @State private var lastCaptureScore: Int? = nil
-
-    private var resonanceDetector: ResonanceDetector? {
-        renderer?.resonanceDetector
-    }
 
     var body: some View {
         ZStack {
@@ -21,63 +16,58 @@ struct ContentView: View {
             // HUD overlay
             VStack {
                 HStack(alignment: .top, spacing: 12) {
-                    // Left: title + status + resonance
+                    // Left: title + ecosystem stats
                     HUDPanel {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("NEURAL DRIFT")
                                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                                 .foregroundStyle(.white.opacity(0.85))
 
-                            HStack(spacing: 8) {
-                                if renderer?.gameState.isInteracting == true {
-                                    Text("⟡ MUTATING")
-                                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                                        .foregroundStyle(.cyan)
-                                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                                }
-
-                                Text("\(gameCenterManager.totalMutations) mutations")
-                                    .font(.system(size: 10, weight: .regular, design: .monospaced))
-                                    .foregroundStyle(.white.opacity(0.5))
-                                    .contentTransition(.numericText())
-                            }
-
-                            // Resonance stats
-                            if let rd = resonanceDetector {
+                            if let eco = renderer?.ecosystem {
+                                // Population + generation
                                 HStack(spacing: 10) {
-                                    Label("\(rd.capturedCount)", systemImage: "sparkles")
+                                    Label("\(eco.creatures.count)", systemImage: "ant.fill")
                                         .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                        .foregroundStyle(.yellow.opacity(0.8))
+                                        .foregroundStyle(.cyan.opacity(0.8))
 
-                                    Text("\(rd.totalScore) pts")
-                                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(.white.opacity(0.7))
+                                    Text("Gen \(eco.generation)")
+                                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                        .foregroundStyle(.white.opacity(0.6))
                                         .contentTransition(.numericText())
                                 }
+
+                                // Species breakdown (colored dots)
+                                HStack(spacing: 4) {
+                                    ForEach(Array(eco.speciesCounts.sorted(by: { $0.value > $1.value }).prefix(5)), id: \.key) { species, count in
+                                        let colors = Ecosystem.speciesColors
+                                        let color = colors[species % colors.count]
+                                        HStack(spacing: 2) {
+                                            Circle()
+                                                .fill(Color(red: Double(color.x), green: Double(color.y), blue: Double(color.z)))
+                                                .frame(width: 6, height: 6)
+                                            Text("\(count)")
+                                                .font(.system(size: 8, weight: .regular, design: .monospaced))
+                                                .foregroundStyle(.white.opacity(0.5))
+                                        }
+                                    }
+                                }
+
+                                // Biodiversity
+                                Text(String(format: "Biodiversity: %.1f", eco.biodiversityScore))
+                                    .font(.system(size: 9, weight: .regular, design: .monospaced))
+                                    .foregroundStyle(.green.opacity(0.6))
+                            }
+
+                            if renderer?.gameState.isInteracting == true {
+                                Text("⟡ MUTATING")
+                                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                    .foregroundStyle(.cyan)
+                                    .transition(.opacity)
                             }
                         }
                     }
 
                     Spacer()
-
-                    // Center: nearby orb indicator
-                    if resonanceDetector?.nearbyOrb != nil {
-                        HUDPanel {
-                            VStack(spacing: 4) {
-                                Image(systemName: "circle.hexagongrid.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundStyle(.yellow)
-                                    .symbolEffect(.pulse)
-                                Text("RESONANCE NEAR")
-                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(.yellow.opacity(0.9))
-                                Text("Click to capture")
-                                    .font(.system(size: 8, weight: .regular, design: .monospaced))
-                                    .foregroundStyle(.white.opacity(0.5))
-                            }
-                        }
-                        .transition(.scale.combined(with: .opacity))
-                    }
 
                     // Right: controls + leaderboard
                     if showControls {
@@ -110,19 +100,7 @@ struct ContentView: View {
                 .padding(.top, 12)
 
                 Spacer()
-
-                // Bottom: capture score popup
-                if let score = lastCaptureScore {
-                    Text("+\(score)")
-                        .font(.system(size: 28, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.yellow)
-                        .shadow(color: .yellow.opacity(0.5), radius: 10)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .padding(.bottom, 40)
-                }
             }
-            .animation(.easeInOut(duration: 0.3), value: resonanceDetector?.nearbyOrb != nil)
-            .animation(.spring(duration: 0.5), value: lastCaptureScore)
         }
         .onAppear {
             gameCenterManager.authenticate()
@@ -140,18 +118,6 @@ struct ContentView: View {
                 gameCenterManager.recordMutation()
                 if gameCenterManager.totalMutations % 10 == 0 {
                     gameCenterManager.submitScores()
-                }
-            }
-            // Try to capture nearby orb when interaction starts
-            if !wasInteracting && isNowInteracting {
-                if let rd = resonanceDetector {
-                    let score = rd.captureNearestOrb()
-                    if score > 0 {
-                        withAnimation { lastCaptureScore = score }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            withAnimation { lastCaptureScore = nil }
-                        }
-                    }
                 }
             }
         }
