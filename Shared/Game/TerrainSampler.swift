@@ -56,7 +56,7 @@ final class TerrainSampler {
                              outputSize: outputSize, weights: weights,
                              offset: offset, output: &result)
 
-        return result[0] * 5.0  // Match GPU height scale
+        return tanh(result[0]) * 4.0  // Match GPU: tanh keeps range [-4, 4]
     }
 
     /// Sample height with smoothing (average of nearby points for stable camera)

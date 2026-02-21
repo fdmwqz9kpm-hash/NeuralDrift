@@ -111,7 +111,7 @@ inline float evaluateTerrainHeight(float2 worldXZ,
     denseLayerLinear<TERRAIN_HIDDEN2_SIZE, TERRAIN_OUTPUT_SIZE>(
         hidden2, weights, offset, output);
 
-    return output[0] * 5.0f; // Scale height for dramatic terrain
+    return tanh(output[0]) * 4.0f; // tanh keeps range [-4, 4], prevents runaway heights
 }
 
 // Full terrain evaluation: height + finite-difference normals
