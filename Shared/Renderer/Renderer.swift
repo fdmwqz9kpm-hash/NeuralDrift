@@ -268,6 +268,10 @@ final class Renderer: NSObject, MTKViewDelegate {
         // Color weights
         computeEncoder.setComputePipelineState(colorPipeline)
         computeEncoder.setBuffer(neuralWeights.colorWeights, offset: 0, index: 0)
+        computeEncoder.setBuffer(playerStateBuffer, offset: 0, index: 1)
+        computeEncoder.setBuffer(deltaTimeBuffer, offset: 0, index: 2)
+        computeEncoder.setBuffer(decayRateBuffer, offset: 0, index: 3)
+        computeEncoder.setBuffer(neuralWeights.colorInitialWeights, offset: 0, index: 4)
 
         let colorThreads = MTLSize(width: NeuralWeights.colorCount, height: 1, depth: 1)
         let colorThreadgroup = MTLSize(width: min(256, NeuralWeights.colorCount), height: 1, depth: 1)
@@ -311,6 +315,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         // Fragment shader buffers
         renderEncoder.setFragmentBuffer(neuralWeights.colorWeights, offset: 0, index: 3)
+        renderEncoder.setFragmentBuffer(playerStateBuffer, offset: 0, index: 4)
 
         // Draw
         renderEncoder.drawIndexedPrimitives(
