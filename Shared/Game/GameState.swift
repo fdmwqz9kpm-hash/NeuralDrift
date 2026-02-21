@@ -5,9 +5,9 @@ import simd
 /// Platform-agnostic; input handlers update this via the InputAction protocol.
 final class GameState: ObservableObject {
     // Camera
-    @Published var cameraPosition: SIMD3<Float> = SIMD3<Float>(0, 5, 10)
+    @Published var cameraPosition: SIMD3<Float> = SIMD3<Float>(0, 8, 15)
     @Published var cameraYaw: Float = 0       // Radians, horizontal rotation
-    @Published var cameraPitch: Float = -0.3   // Radians, vertical rotation (looking slightly down)
+    @Published var cameraPitch: Float = -0.35  // Radians, vertical rotation (looking slightly down)
 
     // Movement
     var moveForward: Float = 0   // -1 to 1
@@ -31,7 +31,7 @@ final class GameState: ObservableObject {
     // Camera constraints
     let pitchMin: Float = -.pi / 2.5
     let pitchMax: Float = .pi / 4.0
-    let cameraHeight: Float = 3.0
+    let cameraHeight: Float = 6.0
 
     func update() {
         let now = CFAbsoluteTimeGetCurrent()

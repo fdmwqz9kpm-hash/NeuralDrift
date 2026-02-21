@@ -301,7 +301,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         renderEncoder.setRenderPipelineState(renderPipelineState)
         renderEncoder.setDepthStencilState(depthStencilState)
         renderEncoder.setFrontFacing(.counterClockwise)
-        renderEncoder.setCullMode(.back)
+        renderEncoder.setCullMode(.none) // Neural terrain can deform wildly
 
         // Vertex shader buffers
         renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)

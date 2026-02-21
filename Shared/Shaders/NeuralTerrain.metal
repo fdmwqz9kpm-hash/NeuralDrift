@@ -11,66 +11,95 @@ struct VertexOut {
     float3 normal;
     float3 viewDirection;
     float  time;
+    float  distToCamera;
 };
 
 // --- Vertex Shader ---
-// Evaluates the terrain neural network per-vertex to generate height + normals.
+// Evaluates terrain neural network per-vertex: height + finite-difference normals.
 vertex VertexOut neuralTerrainVertex(
-    uint                     vertexID      [[vertex_id]],
-    device const GridVertex* vertices      [[buffer(BufferIndexVertices)]],
-    constant Uniforms&       uniforms      [[buffer(BufferIndexUniforms)]],
+    uint                     vertexID       [[vertex_id]],
+    device const GridVertex* vertices       [[buffer(BufferIndexVertices)]],
+    constant Uniforms&       uniforms       [[buffer(BufferIndexUniforms)]],
     device const float*      terrainWeights [[buffer(BufferIndexTerrainWeights)]],
-    constant PlayerState&    player        [[buffer(BufferIndexPlayerState)]]
+    constant PlayerState&    player         [[buffer(BufferIndexPlayerState)]]
 ) {
     GridVertex vert = vertices[vertexID];
     float2 worldXZ = vert.position.xz;
 
-    // Calculate player influence at this vertex
+    // Player influence falloff
     float distToPlayer = length(worldXZ - player.position.xz);
     float influence = max(0.0f, 1.0f - distToPlayer / player.influenceRadius);
     influence *= player.interactionStrength;
 
-    // Evaluate terrain neural network
-    TerrainOutput terrain = evaluateTerrainNetwork(
-        worldXZ, uniforms.time, influence, terrainWeights);
+    // Evaluate terrain with finite-difference normals
+    TerrainOutput terrain = evaluateTerrainFull(
+        worldXZ, uniforms.time, influence, uniforms.gridSpacing, terrainWeights);
 
-    // Apply neural network output to vertex position
-    float3 worldPos = float3(vert.position.x,
-                             terrain.height,
-                             vert.position.z);
-
-    // Compute normal: base up vector + neural perturbation
-    float3 normal = normalize(float3(0.0, 1.0, 0.0) + terrain.normalPerturbation * 0.3f);
+    float3 worldPos = float3(vert.position.x, terrain.height, vert.position.z);
 
     VertexOut out;
     out.position = uniforms.modelViewProjection * float4(worldPos, 1.0);
     out.worldPosition = worldPos;
-    out.normal = uniforms.normalMatrix * normal;
+    out.normal = terrain.normal;
     out.viewDirection = normalize(uniforms.cameraPosition - worldPos);
     out.time = uniforms.time;
+    out.distToCamera = length(uniforms.cameraPosition - worldPos);
 
     return out;
 }
 
 // --- Fragment Shader ---
-// Evaluates the color neural network per-fragment.
+// Neural color + Blinn-Phong lighting + distance fog + sky gradient.
 fragment float4 neuralColorFragment(
-    VertexOut             in            [[stage_in]],
-    device const float*   colorWeights  [[buffer(BufferIndexColorWeights)]]
+    VertexOut             in           [[stage_in]],
+    device const float*   colorWeights [[buffer(BufferIndexColorWeights)]]
 ) {
-    float3 normal = normalize(in.normal);
-    float3 viewDir = normalize(in.viewDirection);
+    float3 N = normalize(in.normal);
+    float3 V = normalize(in.viewDirection);
 
-    // Evaluate color neural network
-    float3 color = evaluateColorNetwork(
-        in.worldPosition, normal, viewDir, in.time, colorWeights);
+    // Neural network base color
+    float3 baseColor = evaluateColorNetwork(
+        in.worldPosition, N, V, in.time, colorWeights);
 
-    // Basic directional lighting
-    float3 lightDir = normalize(float3(0.5, 1.0, 0.3));
-    float diffuse = max(dot(normal, lightDir), 0.0f);
-    float ambient = 0.15f;
+    // --- Blinn-Phong Lighting ---
+    float3 lightDir = normalize(float3(0.4, 0.8, 0.3));
+    float3 lightColor = float3(1.0, 0.95, 0.9);
+    float3 fillDir = normalize(float3(-0.3, 0.4, -0.5));
+    float3 fillColor = float3(0.15, 0.2, 0.35);
 
-    float3 finalColor = color * (ambient + diffuse * 0.85f);
+    // Diffuse
+    float NdotL = max(dot(N, lightDir), 0.0f);
+    float fillDiffuse = max(dot(N, fillDir), 0.0f);
+
+    // Specular (Blinn-Phong)
+    float3 H = normalize(lightDir + V);
+    float NdotH = max(dot(N, H), 0.0f);
+    float specular = pow(NdotH, 64.0f) * 0.5f;
+
+    // Ambient (sky-colored)
+    float ambient = 0.08f;
+    float skyAmbient = 0.06f * (0.5f + 0.5f * N.y); // Brighter facing up
+
+    float3 litColor = baseColor * (ambient + skyAmbient
+                                   + NdotL * 0.7f * lightColor
+                                   + fillDiffuse * 0.25f * fillColor)
+                    + specular * lightColor * 0.4f;
+
+    // --- Distance Fog ---
+    float fogStart = 15.0f;
+    float fogEnd = 55.0f;
+    float fogFactor = saturate((in.distToCamera - fogStart) / (fogEnd - fogStart));
+    fogFactor = fogFactor * fogFactor; // Quadratic falloff
+
+    // Sky/fog color: dark blue-purple gradient
+    float3 fogColor = mix(float3(0.02, 0.02, 0.06),
+                          float3(0.05, 0.03, 0.1),
+                          saturate(V.y * 0.5f + 0.5f));
+
+    float3 finalColor = mix(litColor, fogColor, fogFactor);
+
+    // Subtle tone mapping
+    finalColor = finalColor / (finalColor + 0.8f);
 
     return float4(finalColor, 1.0);
 }

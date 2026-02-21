@@ -10,8 +10,8 @@ final class NeuralWeights {
     let colorWeights: MTLBuffer
     let colorInitialWeights: MTLBuffer
 
-    static let terrainCount = 1348  // Matches TERRAIN_WEIGHT_COUNT in ShaderTypes.h
-    static let colorCount = 499     // Matches COLOR_WEIGHT_COUNT in ShaderTypes.h
+    static let terrainCount = 1732  // Matches TERRAIN_WEIGHT_COUNT in ShaderTypes.h
+    static let colorCount = 1371    // Matches COLOR_WEIGHT_COUNT in ShaderTypes.h
 
     init(device: MTLDevice) {
         let terrainByteSize = NeuralWeights.terrainCount * MemoryLayout<Float>.size
@@ -20,11 +20,13 @@ final class NeuralWeights {
         // Generate initial weights using Xavier-like initialization
         var terrainData = NeuralWeights.generateInitialWeights(
             count: NeuralWeights.terrainCount,
-            layerSizes: [(4, 32), (32, 32), (32, 4)]
+            layerSizes: [(16, 32), (32, 32), (32, 4)],
+            scale: 1.5  // Larger scale → more dramatic initial terrain
         )
         var colorData = NeuralWeights.generateInitialWeights(
             count: NeuralWeights.colorCount,
-            layerSizes: [(10, 16), (16, 16), (16, 3)]
+            layerSizes: [(28, 24), (24, 24), (24, 3)],
+            scale: 1.2  // Slightly boosted for vivid initial colors
         )
 
         // Create GPU buffers
@@ -61,23 +63,25 @@ final class NeuralWeights {
     /// Biases initialized to small positive values for ReLU networks
     private static func generateInitialWeights(
         count: Int,
-        layerSizes: [(Int, Int)]
+        layerSizes: [(Int, Int)],
+        scale: Float = 1.0
     ) -> [Float] {
         var weights = [Float](repeating: 0, count: count)
         var offset = 0
 
         for (fanIn, fanOut) in layerSizes {
-            let scale = sqrt(2.0 / Float(fanIn + fanOut))
+            // He initialization (good for ReLU): sqrt(2/fanIn) * scale
+            let layerScale = sqrt(2.0 / Float(fanIn)) * scale
 
             // Weights
             for i in 0..<(fanIn * fanOut) {
-                weights[offset + i] = NeuralWeights.gaussianRandom() * scale
+                weights[offset + i] = NeuralWeights.gaussianRandom() * layerScale
             }
             offset += fanIn * fanOut
 
-            // Biases (small positive for ReLU, zero for tanh/linear)
+            // Biases: small random to break symmetry
             for i in 0..<fanOut {
-                weights[offset + i] = 0.01
+                weights[offset + i] = Float.random(in: -0.05...0.05)
             }
             offset += fanOut
         }

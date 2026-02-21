@@ -7,19 +7,29 @@ using namespace metal;
 // These run inside vertex and fragment shaders for real-time inference.
 // Kept intentionally small for per-vertex/per-fragment execution at 60fps.
 
-// ReLU activation
-inline float relu(float x) {
-    return max(0.0f, x);
+// Activations
+inline float relu(float x) { return max(0.0f, x); }
+inline float tanh_act(float x) { return tanh(x); }
+
+// --- Sinusoidal Positional Encoding (the NeRF trick) ---
+// Expands a single coordinate into [raw, sin(freq*c), cos(freq*c), ...] features.
+// This lets tiny networks represent high-frequency spatial detail.
+inline int positionalEncode(float coord, thread float* out, int startIdx) {
+    out[startIdx] = coord;
+    int idx = startIdx + 1;
+    float freq = 1.0f;
+    for (int b = 0; b < POS_ENCODE_BANDS; b++) {
+        out[idx]     = sin(freq * coord);
+        out[idx + 1] = cos(freq * coord);
+        idx += 2;
+        freq *= 2.0f;
+    }
+    return idx;
 }
 
-// Tanh activation (used for color network — bounded output)
-inline float tanh_act(float x) {
-    return tanh(x);
-}
+// --- Dense Layer Forward Passes ---
+// weights layout: [outputSize * inputSize weights] then [outputSize biases]
 
-// Forward pass: single dense layer with ReLU
-// weights layout: [outputSize * inputSize weights] followed by [outputSize biases]
-// Returns offset past the consumed weights+biases
 template<int inputSize, int outputSize>
 inline int denseLayerReLU(thread const float* input,
                           device const float* weights,
@@ -30,14 +40,12 @@ inline int denseLayerReLU(thread const float* input,
         for (int i = 0; i < inputSize; i++) {
             sum += input[i] * weights[offset + o * inputSize + i];
         }
-        // Bias
         sum += weights[offset + outputSize * inputSize + o];
         output[o] = relu(sum);
     }
     return offset + outputSize * inputSize + outputSize;
 }
 
-// Forward pass: single dense layer with Tanh
 template<int inputSize, int outputSize>
 inline int denseLayerTanh(thread const float* input,
                           device const float* weights,
@@ -54,7 +62,6 @@ inline int denseLayerTanh(thread const float* input,
     return offset + outputSize * inputSize + outputSize;
 }
 
-// Forward pass: single dense layer with NO activation (linear output)
 template<int inputSize, int outputSize>
 inline int denseLayerLinear(thread const float* input,
                             device const float* weights,
@@ -72,26 +79,22 @@ inline int denseLayerLinear(thread const float* input,
 }
 
 // --- Terrain Neural Network ---
-// Input:  (x, z, time, playerInfluence) -> 4 floats
-// Hidden: 2 x 32 neurons (ReLU)
-// Output: (height, normalPerturbX, normalPerturbY, normalPerturbZ) -> 4 floats
-struct TerrainOutput {
-    float height;
-    float3 normalPerturbation;
-};
-
-inline TerrainOutput evaluateTerrainNetwork(float2 worldXZ,
-                                            float time,
-                                            float playerInfluence,
-                                            device const float* weights) {
-    // Prepare input
+// Evaluates height at a single (x,z) point.
+// Used both for vertex displacement AND finite-difference normal computation.
+inline float evaluateTerrainHeight(float2 worldXZ,
+                                   float time,
+                                   float playerInfluence,
+                                   device const float* weights) {
     float input[TERRAIN_INPUT_SIZE];
-    input[0] = worldXZ.x * 0.1f; // Scale inputs to reasonable range
-    input[1] = worldXZ.y * 0.1f;
-    input[2] = sin(time * 0.5f);  // Periodic time input
-    input[3] = playerInfluence;
 
-    // Hidden layer 1: 4 -> 32 (ReLU)
+    // Positional encoding for x and z
+    int idx = 0;
+    idx = positionalEncode(worldXZ.x * 0.15f, input, idx);  // 7 features
+    idx = positionalEncode(worldXZ.y * 0.15f, input, idx);  // 7 features
+    input[idx++] = sin(time * 0.4f);
+    input[idx++] = playerInfluence;
+
+    // Hidden layer 1: 16 -> 32 (ReLU)
     float hidden1[TERRAIN_HIDDEN1_SIZE];
     int offset = denseLayerReLU<TERRAIN_INPUT_SIZE, TERRAIN_HIDDEN1_SIZE>(
         input, weights, 0, hidden1);
@@ -101,54 +104,81 @@ inline TerrainOutput evaluateTerrainNetwork(float2 worldXZ,
     offset = denseLayerReLU<TERRAIN_HIDDEN1_SIZE, TERRAIN_HIDDEN2_SIZE>(
         hidden1, weights, offset, hidden2);
 
-    // Output layer: 32 -> 4 (Linear)
+    // Output layer: 32 -> 4 (Linear), we only use the height
     float output[TERRAIN_OUTPUT_SIZE];
     denseLayerLinear<TERRAIN_HIDDEN2_SIZE, TERRAIN_OUTPUT_SIZE>(
         hidden2, weights, offset, output);
 
+    return output[0] * 3.0f; // Scale height for visual impact
+}
+
+// Full terrain evaluation: height + finite-difference normals
+struct TerrainOutput {
+    float  height;
+    float3 normal;
+};
+
+inline TerrainOutput evaluateTerrainFull(float2 worldXZ,
+                                         float time,
+                                         float playerInfluence,
+                                         float gridSpacing,
+                                         device const float* weights) {
+    float eps = gridSpacing * 0.5f;
+
+    float hC = evaluateTerrainHeight(worldXZ, time, playerInfluence, weights);
+    float hR = evaluateTerrainHeight(worldXZ + float2(eps, 0), time, playerInfluence, weights);
+    float hF = evaluateTerrainHeight(worldXZ + float2(0, eps), time, playerInfluence, weights);
+
+    // Finite difference normal
+    float3 tangentX = float3(eps, hR - hC, 0.0f);
+    float3 tangentZ = float3(0.0f, hF - hC, eps);
+    float3 normal = normalize(cross(tangentZ, tangentX));
+
     TerrainOutput result;
-    result.height = output[0];
-    result.normalPerturbation = float3(output[1], output[2], output[3]);
+    result.height = hC;
+    result.normal = normal;
     return result;
 }
 
 // --- Color Neural Network ---
-// Input:  (x, y, z, nx, ny, nz, vx, vy, vz, time) -> 10 floats
-// Hidden: 2 x 16 neurons (Tanh)
-// Output: (r, g, b) -> 3 floats (sigmoid applied for [0,1] range)
+// Positional encoding on world position + raw normal/viewDir/time
 inline float3 evaluateColorNetwork(float3 worldPos,
                                    float3 normal,
                                    float3 viewDir,
                                    float time,
                                    device const float* weights) {
     float input[COLOR_INPUT_SIZE];
-    input[0] = worldPos.x * 0.1f;
-    input[1] = worldPos.y * 0.1f;
-    input[2] = worldPos.z * 0.1f;
-    input[3] = normal.x;
-    input[4] = normal.y;
-    input[5] = normal.z;
-    input[6] = viewDir.x;
-    input[7] = viewDir.y;
-    input[8] = viewDir.z;
-    input[9] = sin(time * 0.3f);
+    int idx = 0;
 
-    // Hidden layer 1: 10 -> 16 (Tanh)
+    // Positional encoding for x, y, z
+    idx = positionalEncode(worldPos.x * 0.1f, input, idx);   // 7 features
+    idx = positionalEncode(worldPos.y * 0.2f, input, idx);   // 7 features
+    idx = positionalEncode(worldPos.z * 0.1f, input, idx);   // 7 features
+
+    // Raw vectors
+    input[idx++] = normal.x;
+    input[idx++] = normal.y;
+    input[idx++] = normal.z;
+    input[idx++] = viewDir.x;
+    input[idx++] = viewDir.y;
+    input[idx++] = viewDir.z;
+    input[idx++] = sin(time * 0.25f);
+
+    // Hidden layer 1: 28 -> 24 (Tanh)
     float hidden1[COLOR_HIDDEN1_SIZE];
     int offset = denseLayerTanh<COLOR_INPUT_SIZE, COLOR_HIDDEN1_SIZE>(
         input, weights, 0, hidden1);
 
-    // Hidden layer 2: 16 -> 16 (Tanh)
+    // Hidden layer 2: 24 -> 24 (Tanh)
     float hidden2[COLOR_HIDDEN2_SIZE];
     offset = denseLayerTanh<COLOR_HIDDEN1_SIZE, COLOR_HIDDEN2_SIZE>(
         hidden1, weights, offset, hidden2);
 
-    // Output layer: 16 -> 3 (Linear, then sigmoid for [0,1])
+    // Output layer: 24 -> 3 (Linear, then sigmoid)
     float output[COLOR_OUTPUT_SIZE];
     denseLayerLinear<COLOR_HIDDEN2_SIZE, COLOR_OUTPUT_SIZE>(
         hidden2, weights, offset, output);
 
-    // Sigmoid to clamp to [0, 1] color range
     return float3(1.0f / (1.0f + exp(-output[0])),
                   1.0f / (1.0f + exp(-output[1])),
                   1.0f / (1.0f + exp(-output[2])));
