@@ -1,0 +1,480 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2C44C07B74070352B1FF69FA /* MetalView+iPadOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957EAEE1245329E667BAF25D /* MetalView+iPadOS.swift */; };
+		369A9FAD0B1DF403C88ABBC6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692E0006166C0655727FF2C /* ContentView.swift */; };
+		62D7691915B9A0248FA386FF /* NeuralDriftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12DDFBFDE0E651D7FAF91475 /* NeuralDriftApp.swift */; };
+		757B5F5225F35DE04759F8BD /* NeuralTerrain.metal in Sources */ = {isa = PBXBuildFile; fileRef = CD3F0042E0F08C484931822B /* NeuralTerrain.metal */; };
+		771CA30DD34D289BDEB2512A /* NeuralWeights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6813B1AA817BB437828672E5 /* NeuralWeights.swift */; };
+		7A59835DE6D838D30588680C /* WeightUpdate.metal in Sources */ = {isa = PBXBuildFile; fileRef = 2A7B65C57508D4D993CA8058 /* WeightUpdate.metal */; };
+		7CE87C9B4B18EBF80AEC954A /* Common.metal in Sources */ = {isa = PBXBuildFile; fileRef = FCE46225051BAA2B2A95EE8F /* Common.metal */; };
+		80F2BC6DD7B86E1817A2FB8A /* WeightUpdate.metal in Sources */ = {isa = PBXBuildFile; fileRef = 2A7B65C57508D4D993CA8058 /* WeightUpdate.metal */; };
+		954ECBAC0AECA86D0D88ACD0 /* MetalView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5BCBA6162ABFA393CF7CF8A /* MetalView+macOS.swift */; };
+		9E866852465DB1BC6D97F12D /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6739F3A1754B411B961FE490 /* GameState.swift */; };
+		A48CE3ACA646736B11B1281F /* InputAbstraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11BB00B1C073ED3AAC1437EE /* InputAbstraction.swift */; };
+		AE3732982739A904B28D9C1D /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2925720E1E1FB0D7604E91 /* Renderer.swift */; };
+		AFB26A3C0E4357AB1CC111EF /* Common.metal in Sources */ = {isa = PBXBuildFile; fileRef = FCE46225051BAA2B2A95EE8F /* Common.metal */; };
+		B7AD12C60E0DAC48C30416BE /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6739F3A1754B411B961FE490 /* GameState.swift */; };
+		C2E85B84CC1C7CD7F0E3605C /* InputAbstraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11BB00B1C073ED3AAC1437EE /* InputAbstraction.swift */; };
+		CF15D56C3BBD4A2251AF68DD /* NeuralWeights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6813B1AA817BB437828672E5 /* NeuralWeights.swift */; };
+		D34031E8C4965EA816CE84EF /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2925720E1E1FB0D7604E91 /* Renderer.swift */; };
+		D44EE111644496F5375920BB /* NeuralDriftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12DDFBFDE0E651D7FAF91475 /* NeuralDriftApp.swift */; };
+		F58F1B90EB9C682B5E2F2819 /* NeuralTerrain.metal in Sources */ = {isa = PBXBuildFile; fileRef = CD3F0042E0F08C484931822B /* NeuralTerrain.metal */; };
+		F84C2F11A3D9FC79C5EE34CE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692E0006166C0655727FF2C /* ContentView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		11BB00B1C073ED3AAC1437EE /* InputAbstraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputAbstraction.swift; sourceTree = "<group>"; };
+		12DDFBFDE0E651D7FAF91475 /* NeuralDriftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeuralDriftApp.swift; sourceTree = "<group>"; };
+		1732C2F56260D3328E680221 /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
+		2692E0006166C0655727FF2C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		2A7B65C57508D4D993CA8058 /* WeightUpdate.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = WeightUpdate.metal; sourceTree = "<group>"; };
+		306FCBB37D6B0A2A1420C7E4 /* NeuralDrift-iPadOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "NeuralDrift-iPadOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6739F3A1754B411B961FE490 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
+		6813B1AA817BB437828672E5 /* NeuralWeights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeuralWeights.swift; sourceTree = "<group>"; };
+		957EAEE1245329E667BAF25D /* MetalView+iPadOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MetalView+iPadOS.swift"; sourceTree = "<group>"; };
+		A5B7EFFB504F924CC5FD0270 /* NeuralDrift-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NeuralDrift-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B306C958AB0CADE8F45245AA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B5BCBA6162ABFA393CF7CF8A /* MetalView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MetalView+macOS.swift"; sourceTree = "<group>"; };
+		CD3F0042E0F08C484931822B /* NeuralTerrain.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = NeuralTerrain.metal; sourceTree = "<group>"; };
+		DB2925720E1E1FB0D7604E91 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
+		E0D059AEE0D781E137A07895 /* BridgingHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgingHeader.h; sourceTree = "<group>"; };
+		E50764BE1C663BBFF1DA868F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		FCE46225051BAA2B2A95EE8F /* Common.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Common.metal; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2A373E88FE796DEA69371849 /* iPadOS */ = {
+			isa = PBXGroup;
+			children = (
+				B306C958AB0CADE8F45245AA /* Info.plist */,
+				957EAEE1245329E667BAF25D /* MetalView+iPadOS.swift */,
+			);
+			path = iPadOS;
+			sourceTree = "<group>";
+		};
+		326EAA71C9508348DCEA8836 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				E50764BE1C663BBFF1DA868F /* Info.plist */,
+				B5BCBA6162ABFA393CF7CF8A /* MetalView+macOS.swift */,
+			);
+			path = macOS;
+			sourceTree = "<group>";
+		};
+		453271AF3F42982D242BC966 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				2692E0006166C0655727FF2C /* ContentView.swift */,
+				12DDFBFDE0E651D7FAF91475 /* NeuralDriftApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		5BDFAC181C0CECECB3D2EE2F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				306FCBB37D6B0A2A1420C7E4 /* NeuralDrift-iPadOS.app */,
+				A5B7EFFB504F924CC5FD0270 /* NeuralDrift-macOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		68F0C0CB34E34005AC96740B /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				453271AF3F42982D242BC966 /* App */,
+				CCA58DC0CB6A9F39C7F9D0E6 /* Game */,
+				BDE1C136CD18B52E3C050251 /* Renderer */,
+				9D06F287C45533F3CDCF59F0 /* Shaders */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		8FDD5388F1B92A05B611C769 = {
+			isa = PBXGroup;
+			children = (
+				2A373E88FE796DEA69371849 /* iPadOS */,
+				326EAA71C9508348DCEA8836 /* macOS */,
+				68F0C0CB34E34005AC96740B /* Shared */,
+				5BDFAC181C0CECECB3D2EE2F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9D06F287C45533F3CDCF59F0 /* Shaders */ = {
+			isa = PBXGroup;
+			children = (
+				FCE46225051BAA2B2A95EE8F /* Common.metal */,
+				CD3F0042E0F08C484931822B /* NeuralTerrain.metal */,
+				2A7B65C57508D4D993CA8058 /* WeightUpdate.metal */,
+			);
+			path = Shaders;
+			sourceTree = "<group>";
+		};
+		BDE1C136CD18B52E3C050251 /* Renderer */ = {
+			isa = PBXGroup;
+			children = (
+				E0D059AEE0D781E137A07895 /* BridgingHeader.h */,
+				DB2925720E1E1FB0D7604E91 /* Renderer.swift */,
+				1732C2F56260D3328E680221 /* ShaderTypes.h */,
+			);
+			path = Renderer;
+			sourceTree = "<group>";
+		};
+		CCA58DC0CB6A9F39C7F9D0E6 /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				6739F3A1754B411B961FE490 /* GameState.swift */,
+				11BB00B1C073ED3AAC1437EE /* InputAbstraction.swift */,
+				6813B1AA817BB437828672E5 /* NeuralWeights.swift */,
+			);
+			path = Game;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0C0B08A34CCAEFB2AF98DC2D /* NeuralDrift-macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D5A6C92447B943BFE2D035D0 /* Build configuration list for PBXNativeTarget "NeuralDrift-macOS" */;
+			buildPhases = (
+				BA0049DA80714810104CED55 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "NeuralDrift-macOS";
+			packageProductDependencies = (
+			);
+			productName = "NeuralDrift-macOS";
+			productReference = A5B7EFFB504F924CC5FD0270 /* NeuralDrift-macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		2CF7453922A5A536FB32121A /* NeuralDrift-iPadOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF7B5B9AFDE7C3E357A8D5AD /* Build configuration list for PBXNativeTarget "NeuralDrift-iPadOS" */;
+			buildPhases = (
+				1730BB0FDDB8EEF4F54070DA /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "NeuralDrift-iPadOS";
+			packageProductDependencies = (
+			);
+			productName = "NeuralDrift-iPadOS";
+			productReference = 306FCBB37D6B0A2A1420C7E4 /* NeuralDrift-iPadOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5BDDD45AE7BD2EBE6D08D34F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2600;
+			};
+			buildConfigurationList = AFE9230D1BFC445033EB8925 /* Build configuration list for PBXProject "NeuralDrift" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 8FDD5388F1B92A05B611C769;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2CF7453922A5A536FB32121A /* NeuralDrift-iPadOS */,
+				0C0B08A34CCAEFB2AF98DC2D /* NeuralDrift-macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1730BB0FDDB8EEF4F54070DA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AFB26A3C0E4357AB1CC111EF /* Common.metal in Sources */,
+				F84C2F11A3D9FC79C5EE34CE /* ContentView.swift in Sources */,
+				B7AD12C60E0DAC48C30416BE /* GameState.swift in Sources */,
+				A48CE3ACA646736B11B1281F /* InputAbstraction.swift in Sources */,
+				2C44C07B74070352B1FF69FA /* MetalView+iPadOS.swift in Sources */,
+				D44EE111644496F5375920BB /* NeuralDriftApp.swift in Sources */,
+				757B5F5225F35DE04759F8BD /* NeuralTerrain.metal in Sources */,
+				771CA30DD34D289BDEB2512A /* NeuralWeights.swift in Sources */,
+				D34031E8C4965EA816CE84EF /* Renderer.swift in Sources */,
+				80F2BC6DD7B86E1817A2FB8A /* WeightUpdate.metal in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA0049DA80714810104CED55 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7CE87C9B4B18EBF80AEC954A /* Common.metal in Sources */,
+				369A9FAD0B1DF403C88ABBC6 /* ContentView.swift in Sources */,
+				9E866852465DB1BC6D97F12D /* GameState.swift in Sources */,
+				C2E85B84CC1C7CD7F0E3605C /* InputAbstraction.swift in Sources */,
+				954ECBAC0AECA86D0D88ACD0 /* MetalView+macOS.swift in Sources */,
+				62D7691915B9A0248FA386FF /* NeuralDriftApp.swift in Sources */,
+				F58F1B90EB9C682B5E2F2819 /* NeuralTerrain.metal in Sources */,
+				CF15D56C3BBD4A2251AF68DD /* NeuralWeights.swift in Sources */,
+				AE3732982739A904B28D9C1D /* Renderer.swift in Sources */,
+				7A59835DE6D838D30588680C /* WeightUpdate.metal in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2FDACD2B744A5EA4ABB1030A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = iPadOS/Info.plist;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.neuraldrift.ipados;
+				PRODUCT_NAME = "Neural Drift";
+				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = Shared/Renderer/BridgingHeader.h;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		45BE6A47DC5534402906F355 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OBJC_BRIDGING_HEADER = Shared/Renderer/BridgingHeader.h;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		59DA326BE33C1F41E679CA5B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OBJC_BRIDGING_HEADER = Shared/Renderer/BridgingHeader.h;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		6D329A4745B695ACF514B73F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = macOS/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				METAL_LIBRARY_OUTPUT_DIR = "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.neuraldrift.macos;
+				PRODUCT_NAME = "Neural Drift";
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = Shared/Renderer/BridgingHeader.h;
+			};
+			name = Release;
+		};
+		CD31AFE60B69E118878E033C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = macOS/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				METAL_LIBRARY_OUTPUT_DIR = "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.neuraldrift.macos;
+				PRODUCT_NAME = "Neural Drift";
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = Shared/Renderer/BridgingHeader.h;
+			};
+			name = Debug;
+		};
+		DA73154A9C84C94E5A3BCD4D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = iPadOS/Info.plist;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.neuraldrift.ipados;
+				PRODUCT_NAME = "Neural Drift";
+				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = Shared/Renderer/BridgingHeader.h;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AFE9230D1BFC445033EB8925 /* Build configuration list for PBXProject "NeuralDrift" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				45BE6A47DC5534402906F355 /* Debug */,
+				59DA326BE33C1F41E679CA5B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D5A6C92447B943BFE2D035D0 /* Build configuration list for PBXNativeTarget "NeuralDrift-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CD31AFE60B69E118878E033C /* Debug */,
+				6D329A4745B695ACF514B73F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FF7B5B9AFDE7C3E357A8D5AD /* Build configuration list for PBXNativeTarget "NeuralDrift-iPadOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2FDACD2B744A5EA4ABB1030A /* Debug */,
+				DA73154A9C84C94E5A3BCD4D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5BDDD45AE7BD2EBE6D08D34F /* Project object */;
+}

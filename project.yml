@@ -1,0 +1,80 @@
+name: NeuralDrift
+options:
+  bundleIdPrefix: com.neuraldrift
+  deploymentTarget:
+    macOS: "26.0"
+    iOS: "26.0"
+  xcodeVersion: "26.0"
+  minimumXcodeGenVersion: "2.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_OBJC_BRIDGING_HEADER: Shared/Renderer/BridgingHeader.h
+
+targets:
+  NeuralDrift-macOS:
+    type: application
+    platform: macOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Shared
+        type: group
+      - path: macOS
+        type: group
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.neuraldrift.macos
+        PRODUCT_NAME: Neural Drift
+        MACOSX_DEPLOYMENT_TARGET: "26.0"
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.games"
+        SWIFT_OBJC_BRIDGING_HEADER: Shared/Renderer/BridgingHeader.h
+        METAL_LIBRARY_OUTPUT_DIR: "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)"
+    info:
+      path: macOS/Info.plist
+      properties:
+        CFBundleName: Neural Drift
+        CFBundleDisplayName: Neural Drift
+        CFBundleIdentifier: com.neuraldrift.macos
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "1.0"
+        CFBundlePackageType: APPL
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        LSApplicationCategoryType: public.app-category.games
+
+  NeuralDrift-iPadOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Shared
+        type: group
+      - path: iPadOS
+        type: group
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.neuraldrift.ipados
+        PRODUCT_NAME: Neural Drift
+        IPHONEOS_DEPLOYMENT_TARGET: "26.0"
+        TARGETED_DEVICE_FAMILY: "2"
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        SWIFT_OBJC_BRIDGING_HEADER: Shared/Renderer/BridgingHeader.h
+    info:
+      path: iPadOS/Info.plist
+      properties:
+        CFBundleName: Neural Drift
+        CFBundleDisplayName: Neural Drift
+        CFBundleIdentifier: com.neuraldrift.ipados
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "1.0"
+        CFBundlePackageType: APPL
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        UIRequiredDeviceCapabilities:
+          - metal
+          - arm64
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UILaunchScreen: {}
