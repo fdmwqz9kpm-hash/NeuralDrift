@@ -7,8 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		186489EC0465F29C6338D225 /* Blit.metal in Sources */ = {isa = PBXBuildFile; fileRef = B5D1FF2C8836E4C0E2D81943 /* Blit.metal */; };
+		2BA033797E57CB5075CBF139 /* MetalFXUpscaler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A3995C412DD73D90E43CE49 /* MetalFXUpscaler.swift */; };
 		2C44C07B74070352B1FF69FA /* MetalView+iPadOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957EAEE1245329E667BAF25D /* MetalView+iPadOS.swift */; };
+		2EAF6E9EC72879F1F20A8D86 /* MetalFXUpscaler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A3995C412DD73D90E43CE49 /* MetalFXUpscaler.swift */; };
 		369A9FAD0B1DF403C88ABBC6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692E0006166C0655727FF2C /* ContentView.swift */; };
+		547565F4874ABE5665EC4E27 /* GameCenterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 619903B862F806CCF606CEAF /* GameCenterManager.swift */; };
 		62D7691915B9A0248FA386FF /* NeuralDriftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12DDFBFDE0E651D7FAF91475 /* NeuralDriftApp.swift */; };
 		757B5F5225F35DE04759F8BD /* NeuralTerrain.metal in Sources */ = {isa = PBXBuildFile; fileRef = CD3F0042E0F08C484931822B /* NeuralTerrain.metal */; };
 		771CA30DD34D289BDEB2512A /* NeuralWeights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6813B1AA817BB437828672E5 /* NeuralWeights.swift */; };
@@ -17,6 +21,7 @@
 		80F2BC6DD7B86E1817A2FB8A /* WeightUpdate.metal in Sources */ = {isa = PBXBuildFile; fileRef = 2A7B65C57508D4D993CA8058 /* WeightUpdate.metal */; };
 		954ECBAC0AECA86D0D88ACD0 /* MetalView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5BCBA6162ABFA393CF7CF8A /* MetalView+macOS.swift */; };
 		9E866852465DB1BC6D97F12D /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6739F3A1754B411B961FE490 /* GameState.swift */; };
+		A086FA87B96E7E8E2CE38F88 /* GameCenterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 619903B862F806CCF606CEAF /* GameCenterManager.swift */; };
 		A48CE3ACA646736B11B1281F /* InputAbstraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11BB00B1C073ED3AAC1437EE /* InputAbstraction.swift */; };
 		AE3732982739A904B28D9C1D /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2925720E1E1FB0D7604E91 /* Renderer.swift */; };
 		AFB26A3C0E4357AB1CC111EF /* Common.metal in Sources */ = {isa = PBXBuildFile; fileRef = FCE46225051BAA2B2A95EE8F /* Common.metal */; };
@@ -25,6 +30,7 @@
 		CF15D56C3BBD4A2251AF68DD /* NeuralWeights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6813B1AA817BB437828672E5 /* NeuralWeights.swift */; };
 		D34031E8C4965EA816CE84EF /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2925720E1E1FB0D7604E91 /* Renderer.swift */; };
 		D44EE111644496F5375920BB /* NeuralDriftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12DDFBFDE0E651D7FAF91475 /* NeuralDriftApp.swift */; };
+		ED88A1C852998D1DC2E08673 /* Blit.metal in Sources */ = {isa = PBXBuildFile; fileRef = B5D1FF2C8836E4C0E2D81943 /* Blit.metal */; };
 		F58F1B90EB9C682B5E2F2819 /* NeuralTerrain.metal in Sources */ = {isa = PBXBuildFile; fileRef = CD3F0042E0F08C484931822B /* NeuralTerrain.metal */; };
 		F84C2F11A3D9FC79C5EE34CE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692E0006166C0655727FF2C /* ContentView.swift */; };
 /* End PBXBuildFile section */
@@ -36,12 +42,15 @@
 		2692E0006166C0655727FF2C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		2A7B65C57508D4D993CA8058 /* WeightUpdate.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = WeightUpdate.metal; sourceTree = "<group>"; };
 		306FCBB37D6B0A2A1420C7E4 /* NeuralDrift-iPadOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "NeuralDrift-iPadOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		619903B862F806CCF606CEAF /* GameCenterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterManager.swift; sourceTree = "<group>"; };
 		6739F3A1754B411B961FE490 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		6813B1AA817BB437828672E5 /* NeuralWeights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeuralWeights.swift; sourceTree = "<group>"; };
+		6A3995C412DD73D90E43CE49 /* MetalFXUpscaler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalFXUpscaler.swift; sourceTree = "<group>"; };
 		957EAEE1245329E667BAF25D /* MetalView+iPadOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MetalView+iPadOS.swift"; sourceTree = "<group>"; };
 		A5B7EFFB504F924CC5FD0270 /* NeuralDrift-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NeuralDrift-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B306C958AB0CADE8F45245AA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B5BCBA6162ABFA393CF7CF8A /* MetalView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MetalView+macOS.swift"; sourceTree = "<group>"; };
+		B5D1FF2C8836E4C0E2D81943 /* Blit.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Blit.metal; sourceTree = "<group>"; };
 		CD3F0042E0F08C484931822B /* NeuralTerrain.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = NeuralTerrain.metal; sourceTree = "<group>"; };
 		DB2925720E1E1FB0D7604E91 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
 		E0D059AEE0D781E137A07895 /* BridgingHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgingHeader.h; sourceTree = "<group>"; };
@@ -110,6 +119,7 @@
 		9D06F287C45533F3CDCF59F0 /* Shaders */ = {
 			isa = PBXGroup;
 			children = (
+				B5D1FF2C8836E4C0E2D81943 /* Blit.metal */,
 				FCE46225051BAA2B2A95EE8F /* Common.metal */,
 				CD3F0042E0F08C484931822B /* NeuralTerrain.metal */,
 				2A7B65C57508D4D993CA8058 /* WeightUpdate.metal */,
@@ -121,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				E0D059AEE0D781E137A07895 /* BridgingHeader.h */,
+				6A3995C412DD73D90E43CE49 /* MetalFXUpscaler.swift */,
 				DB2925720E1E1FB0D7604E91 /* Renderer.swift */,
 				1732C2F56260D3328E680221 /* ShaderTypes.h */,
 			);
@@ -130,6 +141,7 @@
 		CCA58DC0CB6A9F39C7F9D0E6 /* Game */ = {
 			isa = PBXGroup;
 			children = (
+				619903B862F806CCF606CEAF /* GameCenterManager.swift */,
 				6739F3A1754B411B961FE490 /* GameState.swift */,
 				11BB00B1C073ED3AAC1437EE /* InputAbstraction.swift */,
 				6813B1AA817BB437828672E5 /* NeuralWeights.swift */,
@@ -208,10 +220,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				186489EC0465F29C6338D225 /* Blit.metal in Sources */,
 				AFB26A3C0E4357AB1CC111EF /* Common.metal in Sources */,
 				F84C2F11A3D9FC79C5EE34CE /* ContentView.swift in Sources */,
+				A086FA87B96E7E8E2CE38F88 /* GameCenterManager.swift in Sources */,
 				B7AD12C60E0DAC48C30416BE /* GameState.swift in Sources */,
 				A48CE3ACA646736B11B1281F /* InputAbstraction.swift in Sources */,
+				2EAF6E9EC72879F1F20A8D86 /* MetalFXUpscaler.swift in Sources */,
 				2C44C07B74070352B1FF69FA /* MetalView+iPadOS.swift in Sources */,
 				D44EE111644496F5375920BB /* NeuralDriftApp.swift in Sources */,
 				757B5F5225F35DE04759F8BD /* NeuralTerrain.metal in Sources */,
@@ -225,10 +240,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ED88A1C852998D1DC2E08673 /* Blit.metal in Sources */,
 				7CE87C9B4B18EBF80AEC954A /* Common.metal in Sources */,
 				369A9FAD0B1DF403C88ABBC6 /* ContentView.swift in Sources */,
+				547565F4874ABE5665EC4E27 /* GameCenterManager.swift in Sources */,
 				9E866852465DB1BC6D97F12D /* GameState.swift in Sources */,
 				C2E85B84CC1C7CD7F0E3605C /* InputAbstraction.swift in Sources */,
+				2BA033797E57CB5075CBF139 /* MetalFXUpscaler.swift in Sources */,
 				954ECBAC0AECA86D0D88ACD0 /* MetalView+macOS.swift in Sources */,
 				62D7691915B9A0248FA386FF /* NeuralDriftApp.swift in Sources */,
 				F58F1B90EB9C682B5E2F2819 /* NeuralTerrain.metal in Sources */,

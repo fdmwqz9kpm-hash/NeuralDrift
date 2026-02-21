@@ -1,4 +1,5 @@
 import MetalKit
+import MetalFX
 import simd
 
 /// Core renderer — coordinates Metal 4 rendering, neural weight buffers, and the game loop.
@@ -30,6 +31,10 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var deltaTimeBuffer: MTLBuffer!
     private var decayRateBuffer: MTLBuffer!
 
+    // MetalFX upscaling
+    private let upscaler: MetalFXUpscaler
+    private var blitPipelineState: MTLRenderPipelineState!
+
     let decayRate: Float = 0.02
 
     init?(metalView: MTKView) {
@@ -42,6 +47,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         self.commandQueue = commandQueue
         self.gameState = GameState()
         self.neuralWeights = NeuralWeights(device: device)
+        self.upscaler = MetalFXUpscaler(device: device, upscaleFactor: 1.5)
 
         super.init()
 
@@ -51,8 +57,10 @@ final class Renderer: NSObject, MTKViewDelegate {
         metalView.clearColor = MTLClearColor(red: 0.02, green: 0.02, blue: 0.05, alpha: 1.0)
         metalView.preferredFramesPerSecond = 60
         metalView.delegate = self
+        metalView.framebufferOnly = false // Needed for MetalFX blit
 
         buildPipelines(metalView: metalView)
+        buildBlitPipeline(metalView: metalView)
         buildMesh()
         buildBuffers()
         buildDepthState()
@@ -105,6 +113,20 @@ final class Renderer: NSObject, MTKViewDelegate {
         if let colorKernel = library.makeFunction(name: "updateColorWeights") {
             colorComputePipeline = try? device.makeComputePipelineState(function: colorKernel)
         }
+    }
+
+    private func buildBlitPipeline(metalView: MTKView) {
+        guard let library = device.makeDefaultLibrary(),
+              let vertexFunc = library.makeFunction(name: "blitVertex"),
+              let fragFunc = library.makeFunction(name: "blitFragment") else { return }
+
+        let desc = MTLRenderPipelineDescriptor()
+        desc.label = "Blit Pipeline"
+        desc.vertexFunction = vertexFunc
+        desc.fragmentFunction = fragFunc
+        desc.colorAttachments[0].pixelFormat = metalView.colorPixelFormat
+
+        blitPipelineState = try? device.makeRenderPipelineState(descriptor: desc)
     }
 
     // MARK: - Mesh Generation
@@ -280,45 +302,26 @@ final class Renderer: NSObject, MTKViewDelegate {
         computeEncoder.endEncoding()
     }
 
-    // MARK: - MTKViewDelegate
+    // MARK: - Terrain Render Encoding (shared between upscaled and direct paths)
 
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        // Handle resize if needed
-    }
-
-    func draw(in view: MTKView) {
-        gameState.update()
-        updateUniforms(drawableSize: view.drawableSize)
-        updatePlayerState()
-
-        guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let renderPassDescriptor = view.currentRenderPassDescriptor else { return }
-
-        // Compute pass: update weights
-        encodeWeightUpdate(commandBuffer: commandBuffer)
-
-        // Render pass: draw neural terrain
-        guard let renderEncoder = commandBuffer.makeRenderCommandEncoder(
-            descriptor: renderPassDescriptor) else { return }
-
-        renderEncoder.label = "Neural Terrain Render"
-        renderEncoder.setRenderPipelineState(renderPipelineState)
-        renderEncoder.setDepthStencilState(depthStencilState)
-        renderEncoder.setFrontFacing(.counterClockwise)
-        renderEncoder.setCullMode(.none) // Neural terrain can deform wildly
+    private func encodeTerrainRender(encoder: MTLRenderCommandEncoder) {
+        encoder.label = "Neural Terrain Render"
+        encoder.setRenderPipelineState(renderPipelineState)
+        encoder.setDepthStencilState(depthStencilState)
+        encoder.setFrontFacing(.counterClockwise)
+        encoder.setCullMode(.none)
 
         // Vertex shader buffers
-        renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-        renderEncoder.setVertexBuffer(uniformBuffer, offset: 0, index: 1)
-        renderEncoder.setVertexBuffer(neuralWeights.terrainWeights, offset: 0, index: 2)
-        renderEncoder.setVertexBuffer(playerStateBuffer, offset: 0, index: 4)
+        encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+        encoder.setVertexBuffer(uniformBuffer, offset: 0, index: 1)
+        encoder.setVertexBuffer(neuralWeights.terrainWeights, offset: 0, index: 2)
+        encoder.setVertexBuffer(playerStateBuffer, offset: 0, index: 4)
 
         // Fragment shader buffers
-        renderEncoder.setFragmentBuffer(neuralWeights.colorWeights, offset: 0, index: 3)
-        renderEncoder.setFragmentBuffer(playerStateBuffer, offset: 0, index: 4)
+        encoder.setFragmentBuffer(neuralWeights.colorWeights, offset: 0, index: 3)
+        encoder.setFragmentBuffer(playerStateBuffer, offset: 0, index: 4)
 
-        // Draw
-        renderEncoder.drawIndexedPrimitives(
+        encoder.drawIndexedPrimitives(
             type: .triangle,
             indexCount: indexCount,
             indexType: .uint32,
@@ -326,11 +329,61 @@ final class Renderer: NSObject, MTKViewDelegate {
             indexBufferOffset: 0
         )
 
-        renderEncoder.endEncoding()
+        encoder.endEncoding()
+    }
 
-        if let drawable = view.currentDrawable {
-            commandBuffer.present(drawable)
+    // MARK: - MTKViewDelegate
+
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+        upscaler.resize(outputSize: size, colorPixelFormat: view.colorPixelFormat)
+    }
+
+    func draw(in view: MTKView) {
+        gameState.update()
+        updatePlayerState()
+
+        guard let commandBuffer = commandQueue.makeCommandBuffer(),
+              let drawable = view.currentDrawable else { return }
+
+        // Compute pass: update weights
+        encodeWeightUpdate(commandBuffer: commandBuffer)
+
+        // --- MetalFX Path: render low-res → upscale → blit to drawable ---
+        if upscaler.isReady, let blitPipeline = blitPipelineState {
+            // Use render resolution for uniforms
+            let renderSize = CGSize(width: upscaler.renderWidth, height: upscaler.renderHeight)
+            updateUniforms(drawableSize: renderSize)
+
+            // 1. Render terrain to offscreen low-res target
+            guard let offscreenRPD = upscaler.makeRenderPassDescriptor(),
+                  let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: offscreenRPD) else { return }
+            encodeTerrainRender(encoder: renderEncoder)
+
+            // 2. MetalFX spatial upscale
+            upscaler.encode(commandBuffer: commandBuffer)
+
+            // 3. Blit upscaled output to drawable
+            let blitRPD = MTLRenderPassDescriptor()
+            blitRPD.colorAttachments[0].texture = drawable.texture
+            blitRPD.colorAttachments[0].loadAction = .dontCare
+            blitRPD.colorAttachments[0].storeAction = .store
+
+            guard let blitEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: blitRPD) else { return }
+            blitEncoder.label = "Blit Upscaled"
+            blitEncoder.setRenderPipelineState(blitPipeline)
+            blitEncoder.setFragmentTexture(upscaler.outputTexture, index: 0)
+            blitEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+            blitEncoder.endEncoding()
+
+        } else {
+            // --- Fallback: render directly to drawable ---
+            updateUniforms(drawableSize: view.drawableSize)
+            guard let renderPassDescriptor = view.currentRenderPassDescriptor,
+                  let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else { return }
+            encodeTerrainRender(encoder: renderEncoder)
         }
+
+        commandBuffer.present(drawable)
         commandBuffer.commit()
     }
 

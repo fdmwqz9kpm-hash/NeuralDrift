@@ -1,8 +1,10 @@
 import SwiftUI
 import MetalKit
+import GameKit
 
 struct ContentView: View {
     @StateObject private var gameState = GameState()
+    @StateObject private var gameCenterManager = GameCenterManager()
     @State private var renderer: Renderer?
 
     var body: some View {
@@ -11,19 +13,24 @@ struct ContentView: View {
             MetalViewContainer(renderer: $renderer, gameState: gameState)
                 .ignoresSafeArea()
 
-            // HUD overlay (minimal for Phase 1)
+            // HUD overlay
             VStack {
-                HStack {
+                HStack(alignment: .top) {
+                    // Left: title + status
                     VStack(alignment: .leading, spacing: 4) {
                         Text("NEURAL DRIFT")
                             .font(.system(size: 14, weight: .bold, design: .monospaced))
                             .foregroundColor(.white.opacity(0.7))
 
                         if gameState.isInteracting {
-                            Text("⟡ INTERACTING")
+                            Text("⟡ MUTATING")
                                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                                 .foregroundColor(.cyan.opacity(0.9))
                         }
+
+                        Text("Mutations: \(gameCenterManager.totalMutations)")
+                            .font(.system(size: 10, weight: .regular, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.5))
                     }
                     .padding(12)
                     .background(.ultraThinMaterial)
@@ -31,25 +38,46 @@ struct ContentView: View {
 
                     Spacer()
 
-                    #if os(macOS)
-                    Text("WASD: Move | Mouse: Look | Click: Interact | R: Reset")
-                        .font(.system(size: 10, weight: .regular, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.4))
-                        .padding(8)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(8)
-                    #else
-                    Text("Left: Move | Right: Look | Double-tap: Interact")
-                        .font(.system(size: 10, weight: .regular, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.4))
-                        .padding(8)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(8)
-                    #endif
+                    // Right: controls + Game Center
+                    VStack(alignment: .trailing, spacing: 6) {
+                        #if os(macOS)
+                        Text("WASD: Move | Mouse: Look | Click: Mutate | R: Reset")
+                            .font(.system(size: 10, weight: .regular, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.4))
+                        #else
+                        Text("Left: Move | Right: Look | Double-tap: Mutate")
+                            .font(.system(size: 10, weight: .regular, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.4))
+                        #endif
+
+                        if gameCenterManager.isAuthenticated {
+                            Button(action: { gameCenterManager.showLeaderboard() }) {
+                                Label("Leaderboard", systemImage: "trophy.fill")
+                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.white.opacity(0.6))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(8)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(8)
                 }
                 .padding()
 
                 Spacer()
+            }
+        }
+        .onAppear {
+            gameCenterManager.authenticate()
+        }
+        .onChange(of: gameState.isInteracting) { wasInteracting, isNowInteracting in
+            if wasInteracting && !isNowInteracting {
+                gameCenterManager.recordMutation()
+                // Submit scores periodically
+                if gameCenterManager.totalMutations % 10 == 0 {
+                    gameCenterManager.submitScores()
+                }
             }
         }
     }
