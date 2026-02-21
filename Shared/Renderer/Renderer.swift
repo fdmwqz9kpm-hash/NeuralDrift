@@ -35,6 +35,9 @@ final class Renderer: NSObject, MTKViewDelegate {
     let resonanceDetector = ResonanceDetector()
     private var resonanceBuffer: MTLBuffer!
 
+    // Audio
+    let audioEngine = AudioEngine()
+
     // MetalFX upscaling
     private let upscaler: MetalFXUpscaler
     private var blitPipelineState: MTLRenderPipelineState!
@@ -49,11 +52,14 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         self.device = device
         self.commandQueue = commandQueue
-        self.gameState = GameState()
         self.neuralWeights = NeuralWeights(device: device)
+        self.gameState = GameState()
         self.upscaler = MetalFXUpscaler(device: device, upscaleFactor: 1.5)
 
         super.init()
+
+        // Wire terrain sampler for first-person camera following
+        gameState.terrainSampler = TerrainSampler(weightsBuffer: neuralWeights.terrainWeights)
 
         metalView.device = device
         metalView.colorPixelFormat = .bgra8Unorm_srgb
@@ -68,6 +74,8 @@ final class Renderer: NSObject, MTKViewDelegate {
         buildMesh()
         buildBuffers()
         buildDepthState()
+
+        audioEngine.start()
     }
 
     // MARK: - Pipeline Setup
@@ -263,7 +271,15 @@ final class Renderer: NSObject, MTKViewDelegate {
                                              byteCount: MemoryLayout<Uniforms>.stride)
     }
 
+    private var wasInteracting = false
+
     private func updatePlayerState() {
+        // Trigger shake on mutation start
+        if gameState.isInteracting && !wasInteracting {
+            gameState.triggerShake(intensity: 0.2)
+        }
+        wasInteracting = gameState.isInteracting
+
         var ps = PlayerStateGPU(
             position: gameState.cameraPosition,
             influenceRadius: gameState.influenceRadius,
@@ -275,6 +291,24 @@ final class Renderer: NSObject, MTKViewDelegate {
                                                  byteCount: MemoryLayout<PlayerStateGPU>.stride)
 
         deltaTimeBuffer.contents().storeBytes(of: gameState.deltaTime, as: Float.self)
+    }
+
+    private func updateAudio() {
+        // Sample weight variance for audio drone pitch
+        let weights = neuralWeights.terrainWeights.contents()
+            .bindMemory(to: Float.self, capacity: NeuralWeights.terrainCount)
+        var sumSq: Float = 0
+        let stride = max(1, NeuralWeights.terrainCount / 32)
+        var n: Float = 0
+        for i in Swift.stride(from: 0, to: NeuralWeights.terrainCount, by: stride) {
+            sumSq += weights[i] * weights[i]
+            n += 1
+        }
+        let variance = sumSq / max(n, 1)
+
+        audioEngine.update(weightVariance: variance,
+                           isInteracting: gameState.isInteracting,
+                           deltaTime: gameState.deltaTime)
     }
 
     private func updateResonance() {
@@ -383,6 +417,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         gameState.update()
         updatePlayerState()
         updateResonance()
+        updateAudio()
 
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let drawable = view.currentDrawable else { return }

@@ -14,16 +14,19 @@
 		2EAF6E9EC72879F1F20A8D86 /* MetalFXUpscaler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A3995C412DD73D90E43CE49 /* MetalFXUpscaler.swift */; };
 		369A9FAD0B1DF403C88ABBC6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692E0006166C0655727FF2C /* ContentView.swift */; };
 		547565F4874ABE5665EC4E27 /* GameCenterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 619903B862F806CCF606CEAF /* GameCenterManager.swift */; };
+		57B3BB1061068CB571838398 /* TerrainSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0B510CABC21140B58F68785 /* TerrainSampler.swift */; };
 		62D7691915B9A0248FA386FF /* NeuralDriftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12DDFBFDE0E651D7FAF91475 /* NeuralDriftApp.swift */; };
 		757B5F5225F35DE04759F8BD /* NeuralTerrain.metal in Sources */ = {isa = PBXBuildFile; fileRef = CD3F0042E0F08C484931822B /* NeuralTerrain.metal */; };
 		771CA30DD34D289BDEB2512A /* NeuralWeights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6813B1AA817BB437828672E5 /* NeuralWeights.swift */; };
 		7A59835DE6D838D30588680C /* WeightUpdate.metal in Sources */ = {isa = PBXBuildFile; fileRef = 2A7B65C57508D4D993CA8058 /* WeightUpdate.metal */; };
 		7CE87C9B4B18EBF80AEC954A /* Common.metal in Sources */ = {isa = PBXBuildFile; fileRef = FCE46225051BAA2B2A95EE8F /* Common.metal */; };
+		7D8F84AC41A336B5533DB480 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF451D5CEED20EEC3C0E3126 /* AudioEngine.swift */; };
 		80F2BC6DD7B86E1817A2FB8A /* WeightUpdate.metal in Sources */ = {isa = PBXBuildFile; fileRef = 2A7B65C57508D4D993CA8058 /* WeightUpdate.metal */; };
 		954ECBAC0AECA86D0D88ACD0 /* MetalView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5BCBA6162ABFA393CF7CF8A /* MetalView+macOS.swift */; };
 		9E866852465DB1BC6D97F12D /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6739F3A1754B411B961FE490 /* GameState.swift */; };
 		A086FA87B96E7E8E2CE38F88 /* GameCenterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 619903B862F806CCF606CEAF /* GameCenterManager.swift */; };
 		A48CE3ACA646736B11B1281F /* InputAbstraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11BB00B1C073ED3AAC1437EE /* InputAbstraction.swift */; };
+		AC187A28A87113DA20EE3C49 /* TerrainSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0B510CABC21140B58F68785 /* TerrainSampler.swift */; };
 		AE3732982739A904B28D9C1D /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2925720E1E1FB0D7604E91 /* Renderer.swift */; };
 		AFB26A3C0E4357AB1CC111EF /* Common.metal in Sources */ = {isa = PBXBuildFile; fileRef = FCE46225051BAA2B2A95EE8F /* Common.metal */; };
 		B7AD12C60E0DAC48C30416BE /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6739F3A1754B411B961FE490 /* GameState.swift */; };
@@ -32,6 +35,7 @@
 		D34031E8C4965EA816CE84EF /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2925720E1E1FB0D7604E91 /* Renderer.swift */; };
 		D44EE111644496F5375920BB /* NeuralDriftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12DDFBFDE0E651D7FAF91475 /* NeuralDriftApp.swift */; };
 		D8FA907598658D2BA263D715 /* ResonanceDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 903E42743F1AF803F982FA3C /* ResonanceDetector.swift */; };
+		E1348DD7D16E822947ACED60 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF451D5CEED20EEC3C0E3126 /* AudioEngine.swift */; };
 		ED88A1C852998D1DC2E08673 /* Blit.metal in Sources */ = {isa = PBXBuildFile; fileRef = B5D1FF2C8836E4C0E2D81943 /* Blit.metal */; };
 		F58F1B90EB9C682B5E2F2819 /* NeuralTerrain.metal in Sources */ = {isa = PBXBuildFile; fileRef = CD3F0042E0F08C484931822B /* NeuralTerrain.metal */; };
 		F84C2F11A3D9FC79C5EE34CE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692E0006166C0655727FF2C /* ContentView.swift */; };
@@ -54,14 +58,24 @@
 		B306C958AB0CADE8F45245AA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B5BCBA6162ABFA393CF7CF8A /* MetalView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MetalView+macOS.swift"; sourceTree = "<group>"; };
 		B5D1FF2C8836E4C0E2D81943 /* Blit.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Blit.metal; sourceTree = "<group>"; };
+		BF451D5CEED20EEC3C0E3126 /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
 		CD3F0042E0F08C484931822B /* NeuralTerrain.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = NeuralTerrain.metal; sourceTree = "<group>"; };
 		DB2925720E1E1FB0D7604E91 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
+		E0B510CABC21140B58F68785 /* TerrainSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerrainSampler.swift; sourceTree = "<group>"; };
 		E0D059AEE0D781E137A07895 /* BridgingHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgingHeader.h; sourceTree = "<group>"; };
 		E50764BE1C663BBFF1DA868F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FCE46225051BAA2B2A95EE8F /* Common.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Common.metal; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		148E03FD5013D3514A128D07 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				BF451D5CEED20EEC3C0E3126 /* AudioEngine.swift */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
 		2A373E88FE796DEA69371849 /* iPadOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -102,6 +116,7 @@
 			isa = PBXGroup;
 			children = (
 				453271AF3F42982D242BC966 /* App */,
+				148E03FD5013D3514A128D07 /* Audio */,
 				CCA58DC0CB6A9F39C7F9D0E6 /* Game */,
 				BDE1C136CD18B52E3C050251 /* Renderer */,
 				9D06F287C45533F3CDCF59F0 /* Shaders */,
@@ -149,6 +164,7 @@
 				11BB00B1C073ED3AAC1437EE /* InputAbstraction.swift */,
 				6813B1AA817BB437828672E5 /* NeuralWeights.swift */,
 				903E42743F1AF803F982FA3C /* ResonanceDetector.swift */,
+				E0B510CABC21140B58F68785 /* TerrainSampler.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -224,6 +240,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D8F84AC41A336B5533DB480 /* AudioEngine.swift in Sources */,
 				186489EC0465F29C6338D225 /* Blit.metal in Sources */,
 				AFB26A3C0E4357AB1CC111EF /* Common.metal in Sources */,
 				F84C2F11A3D9FC79C5EE34CE /* ContentView.swift in Sources */,
@@ -237,6 +254,7 @@
 				771CA30DD34D289BDEB2512A /* NeuralWeights.swift in Sources */,
 				D34031E8C4965EA816CE84EF /* Renderer.swift in Sources */,
 				D8FA907598658D2BA263D715 /* ResonanceDetector.swift in Sources */,
+				AC187A28A87113DA20EE3C49 /* TerrainSampler.swift in Sources */,
 				80F2BC6DD7B86E1817A2FB8A /* WeightUpdate.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -245,6 +263,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E1348DD7D16E822947ACED60 /* AudioEngine.swift in Sources */,
 				ED88A1C852998D1DC2E08673 /* Blit.metal in Sources */,
 				7CE87C9B4B18EBF80AEC954A /* Common.metal in Sources */,
 				369A9FAD0B1DF403C88ABBC6 /* ContentView.swift in Sources */,
@@ -258,6 +277,7 @@
 				CF15D56C3BBD4A2251AF68DD /* NeuralWeights.swift in Sources */,
 				AE3732982739A904B28D9C1D /* Renderer.swift in Sources */,
 				14B7A64C50961164EBF49582 /* ResonanceDetector.swift in Sources */,
+				57B3BB1061068CB571838398 /* TerrainSampler.swift in Sources */,
 				7A59835DE6D838D30588680C /* WeightUpdate.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

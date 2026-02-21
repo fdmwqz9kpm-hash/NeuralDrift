@@ -4,15 +4,15 @@ import simd
 /// Central game state — owns the camera, player position, and interaction state.
 /// Platform-agnostic; input handlers update this via the InputAction protocol.
 final class GameState: ObservableObject {
-    // Camera
-    @Published var cameraPosition: SIMD3<Float> = SIMD3<Float>(0, 18, 25)
-    @Published var cameraYaw: Float = 0       // Radians, horizontal rotation
-    @Published var cameraPitch: Float = -0.4   // Radians, looking down at terrain
+    // Camera — first-person, terrain-following
+    @Published var cameraPosition: SIMD3<Float> = SIMD3<Float>(0, 2, 5)
+    @Published var cameraYaw: Float = 0             // Radians, horizontal rotation
+    @Published var cameraPitch: Float = -0.05        // Slightly looking down
 
     // Movement
     var moveForward: Float = 0   // -1 to 1
     var moveRight: Float = 0     // -1 to 1
-    let moveSpeed: Float = 12.0
+    let moveSpeed: Float = 6.0
 
     // Interaction
     @Published var isInteracting: Bool = false
@@ -29,52 +29,103 @@ final class GameState: ObservableObject {
     let gridSpacing: Float = 0.25
 
     // Camera constraints
-    let pitchMin: Float = -.pi / 2.5
-    let pitchMax: Float = .pi / 4.0
-    let cameraHeight: Float = 16.0
+    let pitchMin: Float = -.pi / 2.2   // Can look almost straight down
+    let pitchMax: Float = .pi / 2.2    // Can look almost straight up
+    let eyeHeight: Float = 2.0         // Height above terrain surface
+
+    // Terrain following
+    var terrainSampler: TerrainSampler?
+    private var smoothedTerrainHeight: Float = 0
+    private let heightSmoothFactor: Float = 6.0  // How fast camera follows terrain
+
+    // Head bob
+    private var walkCycle: Float = 0
+    private let bobAmplitude: Float = 0.06
+    private let bobFrequency: Float = 8.0
+
+    // Camera shake (for mutation feedback)
+    private(set) var shakeOffset: SIMD3<Float> = .zero
+    private var shakeIntensity: Float = 0
+    private let shakeDecay: Float = 8.0
 
     func update() {
         let now = CFAbsoluteTimeGetCurrent()
         deltaTime = Float(now - lastUpdateTime)
-        deltaTime = min(deltaTime, 1.0 / 30.0) // Cap to prevent huge jumps
+        deltaTime = min(deltaTime, 1.0 / 30.0)
         lastUpdateTime = now
         totalTime += deltaTime
 
-        // Calculate forward and right vectors from yaw
-        let forward = SIMD3<Float>(
-            sin(cameraYaw),
-            0,
-            -cos(cameraYaw)
-        )
-        let right = SIMD3<Float>(
-            cos(cameraYaw),
-            0,
-            sin(cameraYaw)
-        )
+        // Calculate forward and right vectors from yaw (horizontal only)
+        let forward = SIMD3<Float>(sin(cameraYaw), 0, -cos(cameraYaw))
+        let right = SIMD3<Float>(cos(cameraYaw), 0, sin(cameraYaw))
 
         // Apply movement
-        let velocity = (forward * moveForward + right * moveRight) * moveSpeed * deltaTime
+        let speed = moveSpeed * deltaTime
+        let velocity = (forward * moveForward + right * moveRight) * speed
         cameraPosition += velocity
-        cameraPosition.y = cameraHeight // Lock height for now (Phase 2: terrain-following)
+
+        // Clamp to grid bounds
+        let halfExtent = Float(gridSize) * gridSpacing * 0.45
+        cameraPosition.x = max(-halfExtent, min(halfExtent, cameraPosition.x))
+        cameraPosition.z = max(-halfExtent, min(halfExtent, cameraPosition.z))
+
+        // Terrain following — sample height at camera XZ and smoothly track it
+        if let sampler = terrainSampler {
+            let targetHeight = sampler.smoothHeightAt(
+                x: cameraPosition.x, z: cameraPosition.z, time: totalTime)
+            smoothedTerrainHeight += (targetHeight - smoothedTerrainHeight)
+                * min(1.0, heightSmoothFactor * deltaTime)
+        }
+
+        // Head bob during movement
+        let isMoving = abs(moveForward) > 0.1 || abs(moveRight) > 0.1
+        if isMoving {
+            walkCycle += deltaTime * bobFrequency
+        } else {
+            walkCycle *= 0.9  // Fade out bob
+        }
+        let bob = sin(walkCycle) * bobAmplitude * (isMoving ? 1.0 : 0.0)
+
+        // Final camera Y = terrain + eye height + bob
+        cameraPosition.y = smoothedTerrainHeight + eyeHeight + bob
+
+        // Camera shake decay
+        if shakeIntensity > 0.001 {
+            shakeIntensity *= exp(-shakeDecay * deltaTime)
+            shakeOffset = SIMD3<Float>(
+                (Float.random(in: -1...1)) * shakeIntensity,
+                (Float.random(in: -1...1)) * shakeIntensity * 0.5,
+                (Float.random(in: -1...1)) * shakeIntensity
+            )
+        } else {
+            shakeOffset = .zero
+            shakeIntensity = 0
+        }
     }
 
-    /// View matrix from current camera state
+    /// Trigger camera shake (called on mutation)
+    func triggerShake(intensity: Float = 0.15) {
+        shakeIntensity = max(shakeIntensity, intensity)
+    }
+
+    /// View matrix from current camera state (includes shake)
     var viewMatrix: simd_float4x4 {
+        let eye = cameraPosition + shakeOffset
         let direction = SIMD3<Float>(
             sin(cameraYaw) * cos(cameraPitch),
             sin(cameraPitch),
             -cos(cameraYaw) * cos(cameraPitch)
         )
-        let target = cameraPosition + direction
-        return GameState.lookAt(eye: cameraPosition, center: target, up: SIMD3<Float>(0, 1, 0))
+        let target = eye + direction
+        return GameState.lookAt(eye: eye, center: target, up: SIMD3<Float>(0, 1, 0))
     }
 
-    /// Projection matrix
+    /// Projection matrix — wider FOV for immersion
     func projectionMatrix(aspectRatio: Float) -> simd_float4x4 {
-        return GameState.perspective(fovY: Float.pi / 3.5,
+        return GameState.perspective(fovY: Float.pi / 2.8,
                                      aspectRatio: aspectRatio,
                                      nearZ: 0.1,
-                                     farZ: 250.0)
+                                     farZ: 200.0)
     }
 
     // MARK: - Matrix Helpers

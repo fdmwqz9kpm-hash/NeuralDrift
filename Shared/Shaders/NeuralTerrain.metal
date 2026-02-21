@@ -155,20 +155,31 @@ fragment float4 neuralColorFragment(
         litColor += orbColor * orbGlow + float3(1.0f) * beam * fadeIn * 0.3f;
     }
 
-    // --- Distance Fog ---
-    float fogStart = 15.0f;
-    float fogEnd = 55.0f;
+    // --- Atmospheric Fog + Sky ---
+    float fogStart = 10.0f;
+    float fogEnd = 50.0f;
     float fogFactor = saturate((in.distToCamera - fogStart) / (fogEnd - fogStart));
     fogFactor = fogFactor * fogFactor;
 
-    float3 fogColor = mix(float3(0.05, 0.05, 0.12),
-                          float3(0.12, 0.08, 0.18),
-                          saturate(V.y * 0.5f + 0.5f));
+    // Sky gradient: deep indigo at zenith → warm haze at horizon
+    float viewUp = saturate(V.y * 0.5f + 0.5f);
+    float3 horizonColor = float3(0.12, 0.08, 0.15);   // Warm purple haze
+    float3 zenithColor  = float3(0.02, 0.02, 0.08);   // Deep space indigo
+    float3 skyColor = mix(horizonColor, zenithColor, viewUp * viewUp);
 
-    float3 finalColor = mix(litColor, fogColor, fogFactor);
+    // Subtle aurora bands (time-shifting color)
+    float aurora = sin(V.y * 8.0f + in.time * 0.3f) * 0.5f + 0.5f;
+    aurora *= exp(-abs(V.y - 0.3f) * 6.0f); // Concentrated near horizon
+    float3 auroraColor = mix(float3(0.0, 0.3, 0.4), float3(0.2, 0.0, 0.4),
+                             sin(in.time * 0.15f) * 0.5f + 0.5f);
+    skyColor += auroraColor * aurora * 0.15f;
 
-    // Gentle tone mapping (higher denominator = brighter output)
-    finalColor = finalColor / (finalColor + 1.2f);
+    // Fog blends toward sky
+    float3 finalColor = mix(litColor, skyColor, fogFactor);
+
+    // Filmic tone mapping (ACES-like, preserves colors better)
+    finalColor = finalColor * (finalColor * 2.51f + 0.03f)
+               / (finalColor * (finalColor * 2.43f + 0.59f) + 0.14f);
 
     return float4(finalColor, 1.0);
 }
