@@ -5,14 +5,14 @@ import simd
 /// Platform-agnostic; input handlers update this via the InputAction protocol.
 final class GameState: ObservableObject {
     // Camera
-    @Published var cameraPosition: SIMD3<Float> = SIMD3<Float>(0, 8, 15)
+    @Published var cameraPosition: SIMD3<Float> = SIMD3<Float>(0, 18, 25)
     @Published var cameraYaw: Float = 0       // Radians, horizontal rotation
-    @Published var cameraPitch: Float = -0.35  // Radians, vertical rotation (looking slightly down)
+    @Published var cameraPitch: Float = -0.4   // Radians, looking down at terrain
 
     // Movement
     var moveForward: Float = 0   // -1 to 1
     var moveRight: Float = 0     // -1 to 1
-    let moveSpeed: Float = 8.0
+    let moveSpeed: Float = 12.0
 
     // Interaction
     @Published var isInteracting: Bool = false
@@ -31,7 +31,7 @@ final class GameState: ObservableObject {
     // Camera constraints
     let pitchMin: Float = -.pi / 2.5
     let pitchMax: Float = .pi / 4.0
-    let cameraHeight: Float = 6.0
+    let cameraHeight: Float = 16.0
 
     func update() {
         let now = CFAbsoluteTimeGetCurrent()
@@ -71,10 +71,10 @@ final class GameState: ObservableObject {
 
     /// Projection matrix
     func projectionMatrix(aspectRatio: Float) -> simd_float4x4 {
-        return GameState.perspective(fovY: Float.pi / 3.0,
+        return GameState.perspective(fovY: Float.pi / 3.5,
                                      aspectRatio: aspectRatio,
                                      nearZ: 0.1,
-                                     farZ: 200.0)
+                                     farZ: 250.0)
     }
 
     // MARK: - Matrix Helpers

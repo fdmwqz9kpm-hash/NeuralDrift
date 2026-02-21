@@ -36,7 +36,6 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var blitPipelineState: MTLRenderPipelineState!
 
     let decayRate: Float = 0.02
-    private var frameCount = 0
 
     init?(metalView: MTKView) {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -349,14 +348,6 @@ final class Renderer: NSObject, MTKViewDelegate {
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let drawable = view.currentDrawable else { return }
 
-        frameCount += 1
-        if frameCount == 1 {
-            print("[Renderer] First frame. drawableSize=\(view.drawableSize), indexCount=\(indexCount)")
-            print("[Renderer] MetalFX ready=\(upscaler.isReady), blitPipeline=\(blitPipelineState != nil)")
-            print("[Renderer] Uniforms stride=\(MemoryLayout<Uniforms>.stride), size=\(MemoryLayout<Uniforms>.size)")
-            print("[Renderer] PlayerState stride=\(MemoryLayout<PlayerStateGPU>.stride), size=\(MemoryLayout<PlayerStateGPU>.size)")
-        }
-
         // Compute pass: update weights
         encodeWeightUpdate(commandBuffer: commandBuffer)
 
@@ -367,7 +358,6 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         // --- MetalFX Path: render low-res → upscale → blit to drawable ---
         if upscaler.isReady, let blitPipeline = blitPipelineState {
-            if frameCount == 1 { print("[Renderer] Using MetalFX path") }
             let renderSize = CGSize(width: upscaler.renderWidth, height: upscaler.renderHeight)
             updateUniforms(drawableSize: renderSize)
 
@@ -394,7 +384,6 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         } else {
             // --- Fallback: render directly to drawable ---
-            if frameCount == 1 { print("[Renderer] Using FALLBACK path (direct to drawable)") }
             updateUniforms(drawableSize: view.drawableSize)
             guard let renderPassDescriptor = view.currentRenderPassDescriptor,
                   let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else { return }
