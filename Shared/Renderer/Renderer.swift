@@ -31,6 +31,10 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var deltaTimeBuffer: MTLBuffer!
     private var decayRateBuffer: MTLBuffer!
 
+    // Resonance system
+    let resonanceDetector = ResonanceDetector()
+    private var resonanceBuffer: MTLBuffer!
+
     // MetalFX upscaling
     private let upscaler: MetalFXUpscaler
     private var blitPipelineState: MTLRenderPipelineState!
@@ -216,6 +220,10 @@ final class Renderer: NSObject, MTKViewDelegate {
         decayRateBuffer.label = "Decay Rate"
 
         decayRateBuffer.contents().storeBytes(of: decayRate, as: Float.self)
+
+        resonanceBuffer = device.makeBuffer(length: MemoryLayout<ResonanceDataGPU>.stride,
+                                             options: .storageModeShared)
+        resonanceBuffer.label = "Resonance Data"
     }
 
     private func buildDepthState() {
@@ -267,6 +275,35 @@ final class Renderer: NSObject, MTKViewDelegate {
                                                  byteCount: MemoryLayout<PlayerStateGPU>.stride)
 
         deltaTimeBuffer.contents().storeBytes(of: gameState.deltaTime, as: Float.self)
+    }
+
+    private func updateResonance() {
+        // Feed terrain weights to resonance detector
+        let weightsPtr = neuralWeights.terrainWeights.contents()
+            .bindMemory(to: Float.self, capacity: NeuralWeights.terrainCount)
+        resonanceDetector.update(
+            terrainWeights: weightsPtr,
+            weightCount: NeuralWeights.terrainCount,
+            playerPosition: gameState.cameraPosition,
+            totalTime: gameState.totalTime,
+            gridSpacing: gameState.gridSpacing,
+            gridSize: gameState.gridSize
+        )
+
+        // Build GPU resonance data
+        var data = ResonanceDataGPU()
+        data.orbCount = Int32(min(resonanceDetector.orbs.count, 5))
+        data.currentTime = gameState.totalTime
+        for i in 0..<Int(data.orbCount) {
+            let orb = resonanceDetector.orbs[i]
+            data.orbs.setOrb(i,
+                position: orb.position,
+                intensity: orb.captured ? 0 : orb.intensity,
+                color: orb.color,
+                spawnTime: orb.spawnTime)
+        }
+        resonanceBuffer.contents().copyMemory(from: &data,
+                                               byteCount: MemoryLayout<ResonanceDataGPU>.stride)
     }
 
     // MARK: - Weight Update (Compute Pass)
@@ -323,6 +360,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         // Fragment shader buffers
         encoder.setFragmentBuffer(neuralWeights.colorWeights, offset: 0, index: 3)
         encoder.setFragmentBuffer(playerStateBuffer, offset: 0, index: 4)
+        encoder.setFragmentBuffer(resonanceBuffer, offset: 0, index: 5)
 
         encoder.drawIndexedPrimitives(
             type: .triangle,
@@ -344,6 +382,7 @@ final class Renderer: NSObject, MTKViewDelegate {
     func draw(in view: MTKView) {
         gameState.update()
         updatePlayerState()
+        updateResonance()
 
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let drawable = view.currentDrawable else { return }
@@ -423,4 +462,43 @@ struct Uniforms {
     var gridSize: Float
     var gridSpacing: Float
     var _padding: Float
+}
+
+// MARK: - Resonance orb GPU struct (matches ResonanceData in ShaderTypes.h)
+
+struct ResonanceOrbGPUSwift {
+    var position: SIMD3<Float>   // 16 bytes (float3 padded)
+    var intensity: Float         // 4 bytes
+    var color: SIMD3<Float>      // 16 bytes (float3 padded)
+    var spawnTime: Float         // 4 bytes
+}
+
+struct ResonanceOrbArray {
+    // Fixed-size storage for 5 orbs (Swift can't do C-style fixed arrays)
+    var orb0 = ResonanceOrbGPUSwift(position: .zero, intensity: 0, color: .zero, spawnTime: 0)
+    var orb1 = ResonanceOrbGPUSwift(position: .zero, intensity: 0, color: .zero, spawnTime: 0)
+    var orb2 = ResonanceOrbGPUSwift(position: .zero, intensity: 0, color: .zero, spawnTime: 0)
+    var orb3 = ResonanceOrbGPUSwift(position: .zero, intensity: 0, color: .zero, spawnTime: 0)
+    var orb4 = ResonanceOrbGPUSwift(position: .zero, intensity: 0, color: .zero, spawnTime: 0)
+
+    mutating func setOrb(_ index: Int, position: SIMD3<Float>, intensity: Float,
+                         color: SIMD3<Float>, spawnTime: Float) {
+        let orb = ResonanceOrbGPUSwift(position: position, intensity: intensity,
+                                        color: color, spawnTime: spawnTime)
+        switch index {
+        case 0: orb0 = orb
+        case 1: orb1 = orb
+        case 2: orb2 = orb
+        case 3: orb3 = orb
+        case 4: orb4 = orb
+        default: break
+        }
+    }
+}
+
+struct ResonanceDataGPU {
+    var orbs = ResonanceOrbArray()
+    var orbCount: Int32 = 0
+    var currentTime: Float = 0
+    var _padding: (Float, Float) = (0, 0)
 }

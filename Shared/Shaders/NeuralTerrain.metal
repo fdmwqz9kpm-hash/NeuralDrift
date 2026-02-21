@@ -51,9 +51,10 @@ vertex VertexOut neuralTerrainVertex(
 // --- Fragment Shader ---
 // Neural color + Blinn-Phong lighting + interaction glow + distance fog.
 fragment float4 neuralColorFragment(
-    VertexOut             in           [[stage_in]],
-    device const float*   colorWeights [[buffer(BufferIndexColorWeights)]],
-    constant PlayerState& player       [[buffer(BufferIndexPlayerState)]]
+    VertexOut               in           [[stage_in]],
+    device const float*     colorWeights [[buffer(BufferIndexColorWeights)]],
+    constant PlayerState&   player       [[buffer(BufferIndexPlayerState)]],
+    constant ResonanceData& resonance    [[buffer(BufferIndexResonance)]]
 ) {
     float3 N = normalize(in.normal);
     float3 V = normalize(in.viewDirection);
@@ -97,30 +98,62 @@ fragment float4 neuralColorFragment(
     float distToPlayer = length(in.worldPosition.xz - player.position.xz);
     float influenceNorm = distToPlayer / player.influenceRadius;
 
-    // Soft glow ring at influence boundary
-    float ringWidth = 0.15f;
+    // Bold ring at influence boundary
+    float ringWidth = 0.2f;
     float ring = exp(-pow((influenceNorm - 1.0f) / ringWidth, 2.0f));
 
-    // Inner glow that pulses during interaction
+    // Strong inner glow with cubic falloff
     float innerGlow = saturate(1.0f - influenceNorm);
-    innerGlow = innerGlow * innerGlow;
+    innerGlow = innerGlow * innerGlow * innerGlow;
 
-    // Energy ripples during active interaction
+    // Multiple ripple layers during active interaction
     float ripple = 0.0f;
     if (player.isInteracting) {
-        ripple = sin(distToPlayer * 8.0f - in.time * 6.0f) * 0.5f + 0.5f;
-        ripple *= innerGlow * 0.6f;
+        // Fast expanding rings
+        float r1 = sin(distToPlayer * 12.0f - in.time * 8.0f) * 0.5f + 0.5f;
+        // Slow deep pulses
+        float r2 = sin(distToPlayer * 4.0f - in.time * 3.0f) * 0.5f + 0.5f;
+        // Interference pattern
+        ripple = (r1 * 0.6f + r2 * 0.4f) * innerGlow;
     }
 
-    // Glow color: cyan-white for interaction, dim cyan for passive
-    float3 glowColor = float3(0.1, 0.7, 1.0);
-    float glowIntensity = ring * 0.3f + innerGlow * 0.15f + ripple * 0.4f;
+    // Passive: subtle cyan ring; Active: bright pulsing white-cyan
+    float3 glowColor;
+    float glowIntensity;
     if (player.isInteracting) {
-        glowColor = float3(0.3, 0.9, 1.0);
-        glowIntensity *= 2.0f;
+        // Pulse between cyan and white during interaction
+        float pulse = sin(in.time * 4.0f) * 0.3f + 0.7f;
+        glowColor = mix(float3(0.2, 0.8, 1.0), float3(1.0, 1.0, 1.0), pulse * innerGlow);
+        glowIntensity = ring * 1.5f + innerGlow * 2.0f + ripple * 1.5f;
+    } else {
+        glowColor = float3(0.1, 0.5, 0.8);
+        glowIntensity = ring * 0.4f + innerGlow * 0.1f;
     }
 
     litColor += glowColor * glowIntensity;
+
+    // --- Resonance Orbs ---
+    // Render orbs as glowing spots on the terrain surface
+    for (int i = 0; i < resonance.orbCount && i < MAX_RESONANCE_ORBS; i++) {
+        float3 orbPos = resonance.orbs[i].position;
+        float orbDist = length(in.worldPosition.xz - orbPos.xz);
+        float orbAge = resonance.currentTime - resonance.orbs[i].spawnTime;
+
+        // Fade in over 1 second, pulse gently
+        float fadeIn = saturate(orbAge * 1.0f);
+        float pulse = 0.8f + 0.2f * sin(orbAge * 3.0f + orbDist * 2.0f);
+
+        // Core glow (sharp center + soft halo)
+        float core = exp(-orbDist * orbDist * 2.0f) * 3.0f;
+        float halo = exp(-orbDist * orbDist * 0.15f) * 0.6f;
+        float orbGlow = (core + halo) * fadeIn * pulse * resonance.orbs[i].intensity;
+
+        // Vertical beam effect
+        float beam = exp(-orbDist * orbDist * 0.8f) * 0.4f;
+
+        float3 orbColor = resonance.orbs[i].color;
+        litColor += orbColor * orbGlow + float3(1.0f) * beam * fadeIn * 0.3f;
+    }
 
     // --- Distance Fog ---
     float fogStart = 15.0f;

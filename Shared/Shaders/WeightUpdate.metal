@@ -58,14 +58,18 @@ kernel void updateTerrainWeights(
         float magnitude = smoothNoise(t * 0.03f + player.position.z * 0.5f);
 
         float perturbation = wave * direction * magnitude;
-        perturbation *= player.interactionStrength * deltaTime * layerStrength * 0.6f;
+        perturbation *= player.interactionStrength * deltaTime * layerStrength * 3.0f;
+
+        // Time-varying modulation for more variety per interaction
+        float timeMod = sin(t * 0.1f + player.position.x * 2.0f) * 0.5f + 1.0f;
+        perturbation *= timeMod;
 
         w += perturbation;
-        w = clamp(w, -4.0f, 4.0f);
+        w = clamp(w, -6.0f, 6.0f);
     }
 
-    // Gentle decay toward initial weights
-    w = mix(w, w0, decayRate * deltaTime);
+    // Slow decay toward initial weights (keeps world from going too chaotic)
+    w = mix(w, w0, decayRate * deltaTime * 0.5f);
 
     weights[tid] = w;
 }
@@ -96,10 +100,13 @@ kernel void updateColorWeights(
         // Output-layer boost: last 75 weights control RGB directly
         float outputBoost = (tid >= 1296) ? 2.0f : 1.0f;
 
-        float perturbation = chromaWave * player.interactionStrength * deltaTime * 0.4f * outputBoost;
+        // Spiral color shifts with position-dependent hue rotation
+        float hueShift = sin(t * 0.11f + player.position.x + player.position.z);
+        float perturbation = (chromaWave + hueShift * 0.5f)
+                           * player.interactionStrength * deltaTime * 2.0f * outputBoost;
 
         w += perturbation;
-        w = clamp(w, -4.0f, 4.0f);
+        w = clamp(w, -6.0f, 6.0f);
     }
 
     w = mix(w, w0, decayRate * deltaTime);

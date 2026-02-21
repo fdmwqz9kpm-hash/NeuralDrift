@@ -5,11 +5,12 @@
 
 // Buffer indices for vertex shader
 enum BufferIndex {
-    BufferIndexVertices     = 0,
-    BufferIndexUniforms     = 1,
+    BufferIndexVertices       = 0,
+    BufferIndexUniforms       = 1,
     BufferIndexTerrainWeights = 2,
-    BufferIndexColorWeights = 3,
-    BufferIndexPlayerState  = 4
+    BufferIndexColorWeights   = 3,
+    BufferIndexPlayerState    = 4,
+    BufferIndexResonance      = 5
 };
 
 // Vertex attribute indices
@@ -68,6 +69,23 @@ struct PlayerState {
 
 // Color: (28*24 + 24) + (24*24 + 24) + (24*3 + 3) = 696 + 600 + 75 = 1371
 #define COLOR_WEIGHT_COUNT 1371
+
+// Resonance orb data passed to GPU
+#define MAX_RESONANCE_ORBS 5
+
+struct ResonanceOrbGPU {
+    simd_float3 position;
+    float       intensity;
+    simd_float3 color;
+    float       spawnTime;
+};
+
+struct ResonanceData {
+    struct ResonanceOrbGPU orbs[MAX_RESONANCE_ORBS];
+    int   orbCount;
+    float currentTime;
+    float _padding[2];
+};
 
 // Grid vertex structure
 struct GridVertex {

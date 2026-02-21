@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		14B7A64C50961164EBF49582 /* ResonanceDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 903E42743F1AF803F982FA3C /* ResonanceDetector.swift */; };
 		186489EC0465F29C6338D225 /* Blit.metal in Sources */ = {isa = PBXBuildFile; fileRef = B5D1FF2C8836E4C0E2D81943 /* Blit.metal */; };
 		2BA033797E57CB5075CBF139 /* MetalFXUpscaler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A3995C412DD73D90E43CE49 /* MetalFXUpscaler.swift */; };
 		2C44C07B74070352B1FF69FA /* MetalView+iPadOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957EAEE1245329E667BAF25D /* MetalView+iPadOS.swift */; };
@@ -30,6 +31,7 @@
 		CF15D56C3BBD4A2251AF68DD /* NeuralWeights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6813B1AA817BB437828672E5 /* NeuralWeights.swift */; };
 		D34031E8C4965EA816CE84EF /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2925720E1E1FB0D7604E91 /* Renderer.swift */; };
 		D44EE111644496F5375920BB /* NeuralDriftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12DDFBFDE0E651D7FAF91475 /* NeuralDriftApp.swift */; };
+		D8FA907598658D2BA263D715 /* ResonanceDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 903E42743F1AF803F982FA3C /* ResonanceDetector.swift */; };
 		ED88A1C852998D1DC2E08673 /* Blit.metal in Sources */ = {isa = PBXBuildFile; fileRef = B5D1FF2C8836E4C0E2D81943 /* Blit.metal */; };
 		F58F1B90EB9C682B5E2F2819 /* NeuralTerrain.metal in Sources */ = {isa = PBXBuildFile; fileRef = CD3F0042E0F08C484931822B /* NeuralTerrain.metal */; };
 		F84C2F11A3D9FC79C5EE34CE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2692E0006166C0655727FF2C /* ContentView.swift */; };
@@ -46,6 +48,7 @@
 		6739F3A1754B411B961FE490 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		6813B1AA817BB437828672E5 /* NeuralWeights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeuralWeights.swift; sourceTree = "<group>"; };
 		6A3995C412DD73D90E43CE49 /* MetalFXUpscaler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalFXUpscaler.swift; sourceTree = "<group>"; };
+		903E42743F1AF803F982FA3C /* ResonanceDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceDetector.swift; sourceTree = "<group>"; };
 		957EAEE1245329E667BAF25D /* MetalView+iPadOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MetalView+iPadOS.swift"; sourceTree = "<group>"; };
 		A5B7EFFB504F924CC5FD0270 /* NeuralDrift-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NeuralDrift-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B306C958AB0CADE8F45245AA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -145,6 +148,7 @@
 				6739F3A1754B411B961FE490 /* GameState.swift */,
 				11BB00B1C073ED3AAC1437EE /* InputAbstraction.swift */,
 				6813B1AA817BB437828672E5 /* NeuralWeights.swift */,
+				903E42743F1AF803F982FA3C /* ResonanceDetector.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -232,6 +236,7 @@
 				757B5F5225F35DE04759F8BD /* NeuralTerrain.metal in Sources */,
 				771CA30DD34D289BDEB2512A /* NeuralWeights.swift in Sources */,
 				D34031E8C4965EA816CE84EF /* Renderer.swift in Sources */,
+				D8FA907598658D2BA263D715 /* ResonanceDetector.swift in Sources */,
 				80F2BC6DD7B86E1817A2FB8A /* WeightUpdate.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -252,6 +257,7 @@
 				F58F1B90EB9C682B5E2F2819 /* NeuralTerrain.metal in Sources */,
 				CF15D56C3BBD4A2251AF68DD /* NeuralWeights.swift in Sources */,
 				AE3732982739A904B28D9C1D /* Renderer.swift in Sources */,
+				14B7A64C50961164EBF49582 /* ResonanceDetector.swift in Sources */,
 				7A59835DE6D838D30588680C /* WeightUpdate.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
