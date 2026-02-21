@@ -48,8 +48,36 @@ vertex VertexOut neuralTerrainVertex(
     return out;
 }
 
+// --- Curated color palette ---
+// Maps neural output into beautiful iridescent/bioluminescent tones
+inline float3 neuralPalette(float3 raw, float height, float time) {
+    // Palette: deep ocean → teal → magenta → gold based on neural + height
+    float t = raw.x * 0.4f + raw.y * 0.3f + raw.z * 0.3f; // Neural hue driver
+    float h = saturate(height * 0.12f + 0.5f);
+
+    // Four-stop gradient: deep blue → cyan → magenta → warm gold
+    float3 c0 = float3(0.02, 0.05, 0.15);   // Deep ocean
+    float3 c1 = float3(0.0, 0.35, 0.45);    // Teal
+    float3 c2 = float3(0.5, 0.05, 0.4);     // Magenta
+    float3 c3 = float3(0.9, 0.6, 0.15);     // Warm gold
+
+    // Blend based on height + neural signal
+    float blend = saturate(t + h * 0.5f + sin(time * 0.08f) * 0.15f);
+    float3 color;
+    if (blend < 0.33f) {
+        color = mix(c0, c1, blend / 0.33f);
+    } else if (blend < 0.66f) {
+        color = mix(c1, c2, (blend - 0.33f) / 0.33f);
+    } else {
+        color = mix(c2, c3, (blend - 0.66f) / 0.34f);
+    }
+
+    // Iridescence: slight color shift based on view angle (computed later)
+    return color;
+}
+
 // --- Fragment Shader ---
-// Neural color + Blinn-Phong lighting + interaction glow + distance fog.
+// Bioluminescent neural landscape with rim lighting, emission, and atmosphere.
 fragment float4 neuralColorFragment(
     VertexOut               in           [[stage_in]],
     device const float*     colorWeights [[buffer(BufferIndexColorWeights)]],
@@ -58,128 +86,135 @@ fragment float4 neuralColorFragment(
 ) {
     float3 N = normalize(in.normal);
     float3 V = normalize(in.viewDirection);
+    float NdotV = max(dot(N, V), 0.0f);
 
-    // Neural network base color (sigmoid output, range 0-1)
-    float3 baseColor = evaluateColorNetwork(
+    // Neural network raw color (sigmoid 0-1)
+    float3 neuralRaw = evaluateColorNetwork(
         in.worldPosition, N, V, in.time, colorWeights);
 
-    // Add height-based tint for visual variety even with flat terrain
-    float heightNorm = saturate(in.worldPosition.y * 0.15f + 0.5f);
-    float3 heightTint = mix(float3(0.2, 0.35, 0.5),   // Low: blue-grey
-                            float3(0.6, 0.8, 0.4),     // High: green
-                            heightNorm);
-    baseColor = mix(heightTint, baseColor, 0.6f); // Blend neural + height
+    // Map through curated palette
+    float3 baseColor = neuralPalette(neuralRaw, in.worldPosition.y, in.time);
 
-    // --- Blinn-Phong Lighting ---
-    float3 lightDir = normalize(float3(0.4, 0.8, 0.3));
-    float3 lightColor = float3(1.0, 0.97, 0.92);
-    float3 fillDir = normalize(float3(-0.3, 0.4, -0.5));
-    float3 fillColor = float3(0.3, 0.4, 0.6);
+    // --- Iridescence: color shifts at glancing angles ---
+    float fresnel = pow(1.0f - NdotV, 3.0f);
+    float3 iridescentShift = float3(0.15, -0.1, 0.25) * fresnel;
+    baseColor = saturate(baseColor + iridescentShift);
 
-    // Diffuse
+    // --- Lighting ---
+    float3 lightDir = normalize(float3(0.3, 0.7, 0.4));
+    float3 lightColor = float3(1.0, 0.95, 0.85);
+
     float NdotL = max(dot(N, lightDir), 0.0f);
-    float fillDiffuse = max(dot(N, fillDir), 0.0f);
-
-    // Specular (Blinn-Phong)
     float3 H = normalize(lightDir + V);
     float NdotH = max(dot(N, H), 0.0f);
-    float specular = pow(NdotH, 32.0f) * 0.3f;
+    float specular = pow(NdotH, 48.0f) * 0.5f;
 
-    // Strong ambient so terrain is always visible
-    float ambient = 0.25f;
-    float skyAmbient = 0.15f * (0.5f + 0.5f * N.y);
+    // Hemisphere ambient (sky vs ground)
+    float3 skyAmbient  = float3(0.08, 0.06, 0.15);
+    float3 gndAmbient  = float3(0.03, 0.04, 0.06);
+    float3 ambientLight = mix(gndAmbient, skyAmbient, N.y * 0.5f + 0.5f);
 
-    float3 litColor = baseColor * (ambient + skyAmbient
-                                   + NdotL * 0.8f * lightColor
-                                   + fillDiffuse * 0.3f * fillColor)
-                    + specular * lightColor * 0.3f;
+    float3 litColor = baseColor * (ambientLight + NdotL * 0.7f * lightColor)
+                    + specular * lightColor * 0.4f;
 
-    // --- Interaction Glow ---
+    // --- Rim lighting: edges glow like bioluminescence ---
+    float rim = pow(1.0f - NdotV, 4.0f) * 0.6f;
+    float3 rimColor = mix(float3(0.1, 0.4, 0.8), float3(0.6, 0.1, 0.5),
+                          sin(in.worldPosition.x * 0.3f + in.time * 0.2f) * 0.5f + 0.5f);
+    litColor += rimColor * rim;
+
+    // --- Terrain emission: surface emits soft glow from neural activity ---
+    float neuralEnergy = (neuralRaw.x + neuralRaw.y + neuralRaw.z) / 3.0f;
+    float emission = pow(neuralEnergy, 2.0f) * 0.2f;
+    float3 emissionColor = baseColor * emission;
+    litColor += emissionColor;
+
+    // --- Grid lines: subtle wireframe overlay for neural-network feel ---
+    float2 gridUV = fract(in.worldPosition.xz * 0.8f);
+    float gridLine = smoothstep(0.02f, 0.0f, min(gridUV.x, gridUV.y))
+                   + smoothstep(0.98f, 1.0f, max(gridUV.x, gridUV.y));
+    gridLine = saturate(gridLine) * 0.08f;
+    litColor += float3(0.2, 0.5, 0.8) * gridLine;
+
+    // --- Interaction shockwave ---
     float distToPlayer = length(in.worldPosition.xz - player.position.xz);
     float influenceNorm = distToPlayer / player.influenceRadius;
 
-    // Bold ring at influence boundary
-    float ringWidth = 0.2f;
-    float ring = exp(-pow((influenceNorm - 1.0f) / ringWidth, 2.0f));
-
-    // Strong inner glow with cubic falloff
-    float innerGlow = saturate(1.0f - influenceNorm);
-    innerGlow = innerGlow * innerGlow * innerGlow;
-
-    // Multiple ripple layers during active interaction
-    float ripple = 0.0f;
     if (player.isInteracting) {
-        // Fast expanding rings
-        float r1 = sin(distToPlayer * 12.0f - in.time * 8.0f) * 0.5f + 0.5f;
-        // Slow deep pulses
-        float r2 = sin(distToPlayer * 4.0f - in.time * 3.0f) * 0.5f + 0.5f;
-        // Interference pattern
-        ripple = (r1 * 0.6f + r2 * 0.4f) * innerGlow;
+        // Expanding rings of energy
+        float wave1 = sin(distToPlayer * 10.0f - in.time * 10.0f) * 0.5f + 0.5f;
+        float wave2 = sin(distToPlayer * 5.0f - in.time * 4.0f) * 0.5f + 0.5f;
+        float waveMask = exp(-distToPlayer * 0.15f); // Fade with distance
+
+        float3 waveColor = mix(float3(0.0, 0.8, 1.0), float3(1.0, 0.3, 0.8),
+                                wave1 * 0.5f + 0.5f);
+        litColor += waveColor * wave1 * waveMask * 0.8f;
+        litColor += float3(1.0) * wave2 * waveMask * 0.15f; // White flash
     }
 
-    // Passive: subtle cyan ring; Active: bright pulsing white-cyan
-    float3 glowColor;
-    float glowIntensity;
-    if (player.isInteracting) {
-        // Pulse between cyan and white during interaction
-        float pulse = sin(in.time * 4.0f) * 0.3f + 0.7f;
-        glowColor = mix(float3(0.2, 0.8, 1.0), float3(1.0, 1.0, 1.0), pulse * innerGlow);
-        glowIntensity = ring * 1.5f + innerGlow * 2.0f + ripple * 1.5f;
-    } else {
-        glowColor = float3(0.1, 0.5, 0.8);
-        glowIntensity = ring * 0.4f + innerGlow * 0.1f;
-    }
-
-    litColor += glowColor * glowIntensity;
+    // Passive proximity glow (always visible, subtle)
+    float proximity = exp(-influenceNorm * influenceNorm * 2.0f) * 0.15f;
+    litColor += float3(0.1, 0.3, 0.5) * proximity;
 
     // --- Resonance Orbs ---
-    // Render orbs as glowing spots on the terrain surface
     for (int i = 0; i < resonance.orbCount && i < MAX_RESONANCE_ORBS; i++) {
         float3 orbPos = resonance.orbs[i].position;
         float orbDist = length(in.worldPosition.xz - orbPos.xz);
         float orbAge = resonance.currentTime - resonance.orbs[i].spawnTime;
 
-        // Fade in over 1 second, pulse gently
-        float fadeIn = saturate(orbAge * 1.0f);
-        float pulse = 0.8f + 0.2f * sin(orbAge * 3.0f + orbDist * 2.0f);
+        float fadeIn = saturate(orbAge);
+        float pulse = 0.7f + 0.3f * sin(orbAge * 2.5f + orbDist * 1.5f);
 
-        // Core glow (sharp center + soft halo)
-        float core = exp(-orbDist * orbDist * 2.0f) * 3.0f;
-        float halo = exp(-orbDist * orbDist * 0.15f) * 0.6f;
-        float orbGlow = (core + halo) * fadeIn * pulse * resonance.orbs[i].intensity;
+        // Bright core + wide soft halo + ring
+        float core = exp(-orbDist * orbDist * 3.0f) * 4.0f;
+        float halo = exp(-orbDist * orbDist * 0.08f) * 0.4f;
+        float orbRing = exp(-pow(orbDist - 1.5f, 2.0f) * 2.0f) * 0.5f;
 
-        // Vertical beam effect
-        float beam = exp(-orbDist * orbDist * 0.8f) * 0.4f;
+        float orbGlow = (core + halo + orbRing) * fadeIn * pulse
+                       * resonance.orbs[i].intensity;
 
         float3 orbColor = resonance.orbs[i].color;
-        litColor += orbColor * orbGlow + float3(1.0f) * beam * fadeIn * 0.3f;
+        litColor += orbColor * orbGlow;
+        litColor += float3(1.0f) * core * fadeIn * 0.2f; // White center
     }
 
     // --- Atmospheric Fog + Sky ---
-    float fogStart = 10.0f;
-    float fogEnd = 50.0f;
+    float fogStart = 8.0f;
+    float fogEnd = 45.0f;
     float fogFactor = saturate((in.distToCamera - fogStart) / (fogEnd - fogStart));
     fogFactor = fogFactor * fogFactor;
 
-    // Sky gradient: deep indigo at zenith → warm haze at horizon
+    // Sky: deep space with color-shifting horizon glow
     float viewUp = saturate(V.y * 0.5f + 0.5f);
-    float3 horizonColor = float3(0.12, 0.08, 0.15);   // Warm purple haze
-    float3 zenithColor  = float3(0.02, 0.02, 0.08);   // Deep space indigo
-    float3 skyColor = mix(horizonColor, zenithColor, viewUp * viewUp);
+    float3 horizonColor = float3(0.08, 0.04, 0.12) +
+        float3(0.06, 0.02, 0.04) * sin(in.time * 0.05f + 1.0f);
+    float3 zenithColor  = float3(0.005, 0.005, 0.02);
+    float3 skyColor = mix(horizonColor, zenithColor, pow(viewUp, 1.5f));
 
-    // Subtle aurora bands (time-shifting color)
-    float aurora = sin(V.y * 8.0f + in.time * 0.3f) * 0.5f + 0.5f;
-    aurora *= exp(-abs(V.y - 0.3f) * 6.0f); // Concentrated near horizon
-    float3 auroraColor = mix(float3(0.0, 0.3, 0.4), float3(0.2, 0.0, 0.4),
-                             sin(in.time * 0.15f) * 0.5f + 0.5f);
-    skyColor += auroraColor * aurora * 0.15f;
+    // Aurora / nebula bands
+    float nebula1 = sin(V.y * 6.0f + in.time * 0.2f + V.x * 2.0f) * 0.5f + 0.5f;
+    float nebula2 = sin(V.y * 10.0f - in.time * 0.15f) * 0.5f + 0.5f;
+    float nebulaMask = exp(-pow(V.y - 0.25f, 2.0f) * 8.0f);
+    float3 nebulaColor = mix(float3(0.0, 0.15, 0.3), float3(0.3, 0.0, 0.25),
+                              nebula1);
+    skyColor += nebulaColor * nebulaMask * nebula2 * 0.2f;
 
-    // Fog blends toward sky
+    // Scattered stars (static noise)
+    float starField = fract(sin(dot(V.xy * 400.0f, float2(12.9898, 78.233))) * 43758.5453f);
+    starField = step(0.998f, starField) * viewUp * 0.4f;
+    skyColor += float3(starField);
+
     float3 finalColor = mix(litColor, skyColor, fogFactor);
 
-    // Filmic tone mapping (ACES-like, preserves colors better)
+    // ACES filmic tone mapping
     finalColor = finalColor * (finalColor * 2.51f + 0.03f)
                / (finalColor * (finalColor * 2.43f + 0.59f) + 0.14f);
+
+    // Subtle vignette
+    float2 screenUV = in.position.xy / float2(2560.0f, 1440.0f); // approximate
+    float2 vignetteUV = (screenUV - 0.5f) * 2.0f;
+    float vignette = 1.0f - dot(vignetteUV, vignetteUV) * 0.15f;
+    finalColor *= saturate(vignette);
 
     return float4(finalColor, 1.0);
 }
