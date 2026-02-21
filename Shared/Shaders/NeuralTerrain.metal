@@ -58,15 +58,22 @@ fragment float4 neuralColorFragment(
     float3 N = normalize(in.normal);
     float3 V = normalize(in.viewDirection);
 
-    // Neural network base color
+    // Neural network base color (sigmoid output, range 0-1)
     float3 baseColor = evaluateColorNetwork(
         in.worldPosition, N, V, in.time, colorWeights);
 
+    // Add height-based tint for visual variety even with flat terrain
+    float heightNorm = saturate(in.worldPosition.y * 0.15f + 0.5f);
+    float3 heightTint = mix(float3(0.2, 0.35, 0.5),   // Low: blue-grey
+                            float3(0.6, 0.8, 0.4),     // High: green
+                            heightNorm);
+    baseColor = mix(heightTint, baseColor, 0.6f); // Blend neural + height
+
     // --- Blinn-Phong Lighting ---
     float3 lightDir = normalize(float3(0.4, 0.8, 0.3));
-    float3 lightColor = float3(1.0, 0.95, 0.9);
+    float3 lightColor = float3(1.0, 0.97, 0.92);
     float3 fillDir = normalize(float3(-0.3, 0.4, -0.5));
-    float3 fillColor = float3(0.15, 0.2, 0.35);
+    float3 fillColor = float3(0.3, 0.4, 0.6);
 
     // Diffuse
     float NdotL = max(dot(N, lightDir), 0.0f);
@@ -75,16 +82,16 @@ fragment float4 neuralColorFragment(
     // Specular (Blinn-Phong)
     float3 H = normalize(lightDir + V);
     float NdotH = max(dot(N, H), 0.0f);
-    float specular = pow(NdotH, 64.0f) * 0.5f;
+    float specular = pow(NdotH, 32.0f) * 0.3f;
 
-    // Ambient (sky-colored)
-    float ambient = 0.08f;
-    float skyAmbient = 0.06f * (0.5f + 0.5f * N.y);
+    // Strong ambient so terrain is always visible
+    float ambient = 0.25f;
+    float skyAmbient = 0.15f * (0.5f + 0.5f * N.y);
 
     float3 litColor = baseColor * (ambient + skyAmbient
-                                   + NdotL * 0.7f * lightColor
-                                   + fillDiffuse * 0.25f * fillColor)
-                    + specular * lightColor * 0.4f;
+                                   + NdotL * 0.8f * lightColor
+                                   + fillDiffuse * 0.3f * fillColor)
+                    + specular * lightColor * 0.3f;
 
     // --- Interaction Glow ---
     float distToPlayer = length(in.worldPosition.xz - player.position.xz);
@@ -121,14 +128,14 @@ fragment float4 neuralColorFragment(
     float fogFactor = saturate((in.distToCamera - fogStart) / (fogEnd - fogStart));
     fogFactor = fogFactor * fogFactor;
 
-    float3 fogColor = mix(float3(0.02, 0.02, 0.06),
-                          float3(0.05, 0.03, 0.1),
+    float3 fogColor = mix(float3(0.05, 0.05, 0.12),
+                          float3(0.12, 0.08, 0.18),
                           saturate(V.y * 0.5f + 0.5f));
 
     float3 finalColor = mix(litColor, fogColor, fogFactor);
 
-    // Tone mapping
-    finalColor = finalColor / (finalColor + 0.8f);
+    // Gentle tone mapping (higher denominator = brighter output)
+    finalColor = finalColor / (finalColor + 1.2f);
 
     return float4(finalColor, 1.0);
 }

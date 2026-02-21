@@ -36,6 +36,7 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var blitPipelineState: MTLRenderPipelineState!
 
     let decayRate: Float = 0.02
+    private var frameCount = 0
 
     init?(metalView: MTKView) {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -84,18 +85,18 @@ final class Renderer: NSObject, MTKViewDelegate {
         pipelineDescriptor.colorAttachments[0].pixelFormat = metalView.colorPixelFormat
         pipelineDescriptor.depthAttachmentPixelFormat = metalView.depthStencilPixelFormat
 
-        // Vertex descriptor matching GridVertex struct
+        // Vertex descriptor matching GridVertex struct (sizeof = 32 in Metal)
         let vertexDescriptor = MTLVertexDescriptor()
-        // Position
+        // Position: float3 at offset 0
         vertexDescriptor.attributes[0].format = .float3
         vertexDescriptor.attributes[0].offset = 0
         vertexDescriptor.attributes[0].bufferIndex = 0
-        // Texcoord
+        // Texcoord: float2 at offset 16
         vertexDescriptor.attributes[1].format = .float2
-        vertexDescriptor.attributes[1].offset = MemoryLayout<SIMD3<Float>>.stride
+        vertexDescriptor.attributes[1].offset = 16
         vertexDescriptor.attributes[1].bufferIndex = 0
-        // Layout
-        vertexDescriptor.layouts[0].stride = MemoryLayout<SIMD3<Float>>.stride + MemoryLayout<SIMD2<Float>>.stride
+        // Layout: stride must match Metal's sizeof(GridVertex) = 32
+        vertexDescriptor.layouts[0].stride = 32
         vertexDescriptor.layouts[0].stepFunction = .perVertex
 
         pipelineDescriptor.vertexDescriptor = vertexDescriptor
@@ -136,10 +137,11 @@ final class Renderer: NSObject, MTKViewDelegate {
         let spacing = gameState.gridSpacing
         let halfExtent = Float(gridSize) * spacing * 0.5
 
-        // Vertices: (gridSize+1) x (gridSize+1)
+        // Metal's GridVertex: float3(16) + float2(8) = 24 data bytes,
+        // but struct alignment is 16 (from float3), so sizeof = 32.
         let vertexCount = (gridSize + 1) * (gridSize + 1)
-        let vertexStride = MemoryLayout<SIMD3<Float>>.stride + MemoryLayout<SIMD2<Float>>.stride
-        var vertexData = [UInt8](repeating: 0, count: vertexCount * vertexStride)
+        let metalVertexStride = 32  // Must match sizeof(GridVertex) in Metal
+        var vertexData = [UInt8](repeating: 0, count: vertexCount * metalVertexStride)
 
         vertexData.withUnsafeMutableBytes { rawBuffer in
             var offset = 0
@@ -151,10 +153,12 @@ final class Renderer: NSObject, MTKViewDelegate {
                     let texcoord = SIMD2<Float>(Float(x) / Float(gridSize),
                                                 Float(z) / Float(gridSize))
 
+                    // float3 position at offset+0 (16 bytes)
                     rawBuffer.storeBytes(of: position, toByteOffset: offset, as: SIMD3<Float>.self)
-                    offset += MemoryLayout<SIMD3<Float>>.stride
-                    rawBuffer.storeBytes(of: texcoord, toByteOffset: offset, as: SIMD2<Float>.self)
-                    offset += MemoryLayout<SIMD2<Float>>.stride
+                    // float2 texcoord at offset+16 (8 bytes)
+                    rawBuffer.storeBytes(of: texcoord, toByteOffset: offset + 16, as: SIMD2<Float>.self)
+                    // 8 bytes of padding at offset+24 (implicit zeros)
+                    offset += metalVertexStride
                 }
             }
         }
@@ -345,12 +349,25 @@ final class Renderer: NSObject, MTKViewDelegate {
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let drawable = view.currentDrawable else { return }
 
+        frameCount += 1
+        if frameCount == 1 {
+            print("[Renderer] First frame. drawableSize=\(view.drawableSize), indexCount=\(indexCount)")
+            print("[Renderer] MetalFX ready=\(upscaler.isReady), blitPipeline=\(blitPipelineState != nil)")
+            print("[Renderer] Uniforms stride=\(MemoryLayout<Uniforms>.stride), size=\(MemoryLayout<Uniforms>.size)")
+            print("[Renderer] PlayerState stride=\(MemoryLayout<PlayerStateGPU>.stride), size=\(MemoryLayout<PlayerStateGPU>.size)")
+        }
+
         // Compute pass: update weights
         encodeWeightUpdate(commandBuffer: commandBuffer)
 
+        // Ensure MetalFX textures are created (resize may not fire before first draw)
+        if !upscaler.isReady {
+            upscaler.resize(outputSize: view.drawableSize, colorPixelFormat: view.colorPixelFormat)
+        }
+
         // --- MetalFX Path: render low-res → upscale → blit to drawable ---
         if upscaler.isReady, let blitPipeline = blitPipelineState {
-            // Use render resolution for uniforms
+            if frameCount == 1 { print("[Renderer] Using MetalFX path") }
             let renderSize = CGSize(width: upscaler.renderWidth, height: upscaler.renderHeight)
             updateUniforms(drawableSize: renderSize)
 
@@ -377,6 +394,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         } else {
             // --- Fallback: render directly to drawable ---
+            if frameCount == 1 { print("[Renderer] Using FALLBACK path (direct to drawable)") }
             updateUniforms(drawableSize: view.drawableSize)
             guard let renderPassDescriptor = view.currentRenderPassDescriptor,
                   let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else { return }
@@ -393,6 +411,9 @@ final class Renderer: NSObject, MTKViewDelegate {
 }
 
 // MARK: - GPU-compatible struct (matches PlayerState in ShaderTypes.h)
+
+// NOTE: Swift's SIMD3<Float> has stride 16 inside structs, matching Metal's float3.
+// No extra padding needed between SIMD3 and subsequent fields.
 
 struct PlayerStateGPU {
     var position: SIMD3<Float>

@@ -17,17 +17,26 @@ final class NeuralWeights {
         let terrainByteSize = NeuralWeights.terrainCount * MemoryLayout<Float>.size
         let colorByteSize = NeuralWeights.colorCount * MemoryLayout<Float>.size
 
-        // Generate initial weights using Xavier-like initialization
+        // Generate initial weights — boosted scale for dramatic terrain
         var terrainData = NeuralWeights.generateInitialWeights(
             count: NeuralWeights.terrainCount,
             layerSizes: [(16, 32), (32, 32), (32, 4)],
-            scale: 1.5  // Larger scale → more dramatic initial terrain
+            scale: 2.0  // Large scale → dramatic ridges and valleys
         )
+        // Bias the output layer toward interesting height range
+        let terrainOutputBiasStart = 16*32+32 + 32*32+32 + 32*4 // Start of output biases
+        terrainData[terrainOutputBiasStart] = 0.5     // Height bias: slightly above zero
+
         var colorData = NeuralWeights.generateInitialWeights(
             count: NeuralWeights.colorCount,
             layerSizes: [(28, 24), (24, 24), (24, 3)],
-            scale: 1.2  // Slightly boosted for vivid initial colors
+            scale: 1.5  // Vivid initial colors
         )
+        // Bias color output for warm earth tones
+        let colorOutputBiasStart = 28*24+24 + 24*24+24 + 24*3
+        colorData[colorOutputBiasStart]     =  0.3   // R bias
+        colorData[colorOutputBiasStart + 1] = -0.2   // G bias (will produce warm greens via sigmoid)
+        colorData[colorOutputBiasStart + 2] = -0.5   // B bias (less blue → earthy)
 
         // Create GPU buffers
         terrainWeights = device.makeBuffer(

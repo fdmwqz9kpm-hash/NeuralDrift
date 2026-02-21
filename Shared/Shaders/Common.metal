@@ -87,11 +87,13 @@ inline float evaluateTerrainHeight(float2 worldXZ,
                                    device const float* weights) {
     float input[TERRAIN_INPUT_SIZE];
 
-    // Positional encoding for x and z
+    // Positional encoding for x and z with time-varying phase shift
+    // This makes the terrain slowly drift and morph over time
+    float phase = time * 0.15f;
     int idx = 0;
-    idx = positionalEncode(worldXZ.x * 0.15f, input, idx);  // 7 features
-    idx = positionalEncode(worldXZ.y * 0.15f, input, idx);  // 7 features
-    input[idx++] = sin(time * 0.4f);
+    idx = positionalEncode(worldXZ.x * 0.15f + sin(phase) * 0.3f, input, idx);  // 7 features
+    idx = positionalEncode(worldXZ.y * 0.15f + cos(phase * 0.7f) * 0.3f, input, idx);  // 7 features
+    input[idx++] = sin(time * 0.4f) * cos(time * 0.17f);  // Complex time signal
     input[idx++] = playerInfluence;
 
     // Hidden layer 1: 16 -> 32 (ReLU)
@@ -109,7 +111,7 @@ inline float evaluateTerrainHeight(float2 worldXZ,
     denseLayerLinear<TERRAIN_HIDDEN2_SIZE, TERRAIN_OUTPUT_SIZE>(
         hidden2, weights, offset, output);
 
-    return output[0] * 3.0f; // Scale height for visual impact
+    return output[0] * 5.0f; // Scale height for dramatic terrain
 }
 
 // Full terrain evaluation: height + finite-difference normals
@@ -150,10 +152,11 @@ inline float3 evaluateColorNetwork(float3 worldPos,
     float input[COLOR_INPUT_SIZE];
     int idx = 0;
 
-    // Positional encoding for x, y, z
-    idx = positionalEncode(worldPos.x * 0.1f, input, idx);   // 7 features
-    idx = positionalEncode(worldPos.y * 0.2f, input, idx);   // 7 features
-    idx = positionalEncode(worldPos.z * 0.1f, input, idx);   // 7 features
+    // Positional encoding for x, y, z with slow color drift
+    float cPhase = time * 0.1f;
+    idx = positionalEncode(worldPos.x * 0.1f + sin(cPhase * 0.6f) * 0.2f, input, idx);
+    idx = positionalEncode(worldPos.y * 0.2f, input, idx);
+    idx = positionalEncode(worldPos.z * 0.1f + cos(cPhase * 0.4f) * 0.2f, input, idx);
 
     // Raw vectors
     input[idx++] = normal.x;
@@ -162,7 +165,7 @@ inline float3 evaluateColorNetwork(float3 worldPos,
     input[idx++] = viewDir.x;
     input[idx++] = viewDir.y;
     input[idx++] = viewDir.z;
-    input[idx++] = sin(time * 0.25f);
+    input[idx++] = sin(time * 0.25f) * cos(time * 0.11f);
 
     // Hidden layer 1: 28 -> 24 (Tanh)
     float hidden1[COLOR_HIDDEN1_SIZE];
