@@ -456,17 +456,15 @@ final class Renderer: NSObject, MTKViewDelegate {
         guard count > 0 else { return }
 
         // Update creature instance buffer
+        // NOTE: We place creatures at a fixed Y based on camera terrain height
+        // to avoid 80+ CPU neural net evals per frame. The vertex shader could
+        // evaluate terrain height per-creature on GPU if needed later.
         let ptr = buffer.contents().bindMemory(to: CreatureInstanceGPU.self, capacity: count)
-        let time = gameState.totalTime
+        let baseY = gameState.cameraPosition.y - 1.5 // Approximate terrain surface
         for i in 0..<count {
             let c = ecosystem.creatures[i]
-            // Get terrain height at creature position
-            var h: Float = 0
-            if let sampler = gameState.terrainSampler {
-                h = sampler.heightAt(x: c.position.x, z: c.position.y, time: time)
-            }
             ptr[i] = CreatureInstanceGPU(
-                posX: c.position.x, posY: h + 0.3, posZ: c.position.y,
+                posX: c.position.x, posY: baseY, posZ: c.position.y,
                 energy: c.energy,
                 colorR: c.speciesColor.x, colorG: c.speciesColor.y, colorB: c.speciesColor.z,
                 age: c.age,

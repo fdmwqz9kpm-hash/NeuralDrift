@@ -10,11 +10,13 @@ final class Ecosystem: ObservableObject {
     @Published var totalDied: Int = 0
     @Published var speciesCounts: [Int: Int] = [:]  // species ID → count
 
-    let maxCreatures = 150
-    let initialCount = 40
+    let maxCreatures = 80
+    let initialCount = 20
     let reproductionThreshold: Float = 1.5
     let gridSpacing: Float
     let gridSize: Int
+    private var tickAccumulator: Float = 0
+    private let tickInterval: Float = 1.0 / 20.0  // 20 Hz simulation
 
     // Species colors (8 possible species)
     static let speciesColors: [SIMD3<Float>] = [
@@ -64,9 +66,14 @@ final class Ecosystem: ObservableObject {
         updateSpeciesCounts()
     }
 
-    /// Run one simulation tick
+    /// Run one simulation tick (throttled to 20Hz)
     func update(playerPosition: SIMD3<Float>, isInteracting: Bool, time: Float, deltaTime: Float) {
         guard deltaTime > 0, deltaTime < 0.1 else { return }
+
+        tickAccumulator += deltaTime
+        guard tickAccumulator >= tickInterval else { return }
+        let simDT = tickAccumulator
+        tickAccumulator = 0
 
         let halfExtent = Float(gridSize) * gridSpacing * 0.4
         var newCreatures: [Creature] = []
@@ -81,15 +88,8 @@ final class Ecosystem: ObservableObject {
             let pos = creatures[i].position
             let heading = creatures[i].heading
 
-            // Terrain slope in heading direction
-            var slope: Float = 0
-            if let sampler = terrainSampler {
-                let ahead = SIMD2<Float>(pos.x + cos(heading) * 0.5,
-                                          pos.y + sin(heading) * 0.5)
-                let hHere = sampler.heightAt(x: pos.x, z: pos.y, time: time)
-                let hAhead = sampler.heightAt(x: ahead.x, z: ahead.y, time: time)
-                slope = (hAhead - hHere) * 2.0  // Normalized steepness
-            }
+            // Approximate slope from position hash (avoids CPU neural net eval)
+            let slope = sin(pos.x * 0.5 + time * 0.1) * cos(pos.y * 0.5) * 0.3
 
             // Nearby creature density (within radius 3)
             var nearCount: Float = 0
@@ -113,13 +113,9 @@ final class Ecosystem: ObservableObject {
             let playerDist2D = simd_length(SIMD2<Float>(playerPosition.x, playerPosition.z) - pos)
             let playerNorm = min(playerDist2D / 20.0, 1.0)
 
-            // Food: terrain height in certain range is "food" (medium height = fertile)
-            var foodValue: Float = 0
-            if let sampler = terrainSampler {
-                let h = sampler.heightAt(x: pos.x, z: pos.y, time: time)
-                // Food is abundant at moderate heights, scarce at extremes
-                foodValue = exp(-pow((h - 1.5) / 3.0, 2.0))
-            }
+            // Food: procedural based on position (avoids CPU neural net eval)
+            let foodNoise = sin(pos.x * 0.3 + time * 0.05) * cos(pos.y * 0.4 - time * 0.03)
+            var foodValue: Float = max(0, foodNoise * 0.5 + 0.3)
 
             // Player interaction creates food burst nearby
             if isInteracting && playerDist2D < 8.0 {
@@ -135,7 +131,7 @@ final class Ecosystem: ObservableObject {
                 nearestCreatureAngle: nearestAngle
             )
 
-            creatures[i].step(inputs: inputs, deltaTime: deltaTime)
+            creatures[i].step(inputs: inputs, deltaTime: simDT)
 
             // Boundary wrapping
             if creatures[i].position.x > halfExtent { creatures[i].position.x = -halfExtent }
