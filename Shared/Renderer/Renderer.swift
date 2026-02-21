@@ -463,6 +463,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         let baseY = gameState.cameraPosition.y - 1.5 // Approximate terrain surface
         for i in 0..<count {
             let c = ecosystem.creatures[i]
+            let scale: Float = 0.5 + min(Float(c.generation), 10.0) * 0.1 + c.energy * 0.2
             ptr[i] = CreatureInstanceGPU(
                 posX: c.position.x, posY: baseY, posZ: c.position.y,
                 energy: c.energy,
@@ -470,7 +471,8 @@ final class Renderer: NSObject, MTKViewDelegate {
                 age: c.age,
                 heading: c.heading,
                 speed: c.speed,
-                _pad0: 0, _pad1: 0
+                species: Float(c.species),
+                scale: scale
             )
         }
 
@@ -631,6 +633,6 @@ struct CreatureInstanceGPU {
     var age: Float
     var heading: Float
     var speed: Float
-    var _pad0: Float
-    var _pad1: Float
+    var species: Float
+    var scale: Float
 }

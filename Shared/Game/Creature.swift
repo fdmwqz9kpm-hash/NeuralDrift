@@ -23,11 +23,20 @@ struct Creature {
 
         // Run neural brain
         let outputs = brain.evaluate(inputs: inputs)
-        let turnRate = outputs.turn * 3.0   // Max ±3 rad/sec
-        let speedMult = 0.3 + outputs.speed * 0.7  // 0.3 to 1.0
+        var turnRate = outputs.turn * 3.0   // Max ±3 rad/sec
+        var speedMult = 0.3 + outputs.speed * 0.7  // 0.3 to 1.0
+
+        // Flocking: gently steer toward nearby same-species heading
+        turnRate += inputs.flockHeading * 1.5
+
+        // Panic: scatter away from mutation shockwave
+        if inputs.panic > 0.1 {
+            speedMult = min(speedMult + inputs.panic * 0.8, 1.5)
+            turnRate += (Float.random(in: -1...1)) * inputs.panic * 5.0
+        }
 
         heading += turnRate * deltaTime
-        speed = speedMult * 2.0
+        speed = speedMult * 2.5
 
         // Move
         let dx = cos(heading) * speed * deltaTime
@@ -36,7 +45,7 @@ struct Creature {
         position.y += dz
 
         // Energy cost: movement + base metabolism
-        energy -= (0.03 + speed * 0.01) * deltaTime
+        energy -= (0.025 + speed * 0.008) * deltaTime
 
         // Energy from terrain (food patches at certain heights)
         energy += inputs.foodValue * 0.15 * deltaTime
@@ -53,6 +62,8 @@ struct BrainInputs {
     var energyLevel: Float       // 0 to 2, creature's current energy
     var foodValue: Float         // 0 to 1, food availability at position
     var nearestCreatureAngle: Float  // -1 to 1, relative angle to nearest
+    var flockHeading: Float      // -1 to 1, average heading of nearby same-species
+    var panic: Float             // 0 to 1, mutation shockwave nearby
 }
 
 /// Brain outputs
@@ -61,25 +72,24 @@ struct BrainOutputs {
     var speed: Float  // 0 to 1
 }
 
-/// Tiny neural network: 6 inputs → 8 hidden (tanh) → 2 outputs (tanh)
-/// ~66 weights total — runs hundreds of times per frame easily
+/// Tiny neural network: 8 inputs → 8 hidden (tanh) → 2 outputs (tanh)
 struct CreatureBrain {
-    // Layer 1: 6×8 weights + 8 biases = 56
-    var w1: [Float]  // 48 weights
+    // Layer 1: 8×8 weights + 8 biases = 72
+    var w1: [Float]  // 64 weights
     var b1: [Float]  // 8 biases
     // Layer 2: 8×2 weights + 2 biases = 18
     var w2: [Float]  // 16 weights
     var b2: [Float]  // 2 biases
 
-    static let inputSize = 6
+    static let inputSize = 8
     static let hiddenSize = 8
     static let outputSize = 2
-    static let totalWeights = 6*8 + 8 + 8*2 + 2  // 74
+    static let totalWeights = 8*8 + 8 + 8*2 + 2  // 90
 
     /// Random initialization
     static func random() -> CreatureBrain {
         CreatureBrain(
-            w1: (0..<48).map { _ in Float.random(in: -1...1) },
+            w1: (0..<64).map { _ in Float.random(in: -1...1) },
             b1: (0..<8).map { _ in Float.random(in: -0.3...0.3) },
             w2: (0..<16).map { _ in Float.random(in: -1...1) },
             b2: (0..<2).map { _ in Float.random(in: -0.2...0.2) }
@@ -94,7 +104,9 @@ struct CreatureBrain {
             inputs.playerDistance,
             inputs.energyLevel,
             inputs.foodValue,
-            inputs.nearestCreatureAngle
+            inputs.nearestCreatureAngle,
+            inputs.flockHeading,
+            inputs.panic
         ]
 
         // Hidden layer (tanh)

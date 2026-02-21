@@ -78,46 +78,66 @@ final class Ecosystem: ObservableObject {
         let halfExtent = Float(gridSize) * gridSpacing * 0.4
         var newCreatures: [Creature] = []
 
-        // Precompute spatial data for nearby creature detection
+        // Precompute spatial data
         let positions = creatures.map { $0.position }
+        let headings = creatures.map { $0.heading }
+        let speciesIDs = creatures.map { $0.species }
+        let playerPos2D = SIMD2<Float>(playerPosition.x, playerPosition.z)
 
         for i in 0..<creatures.count {
             guard creatures[i].isAlive else { continue }
 
-            // Compute brain inputs
             let pos = creatures[i].position
             let heading = creatures[i].heading
+            let mySpecies = speciesIDs[i]
 
-            // Approximate slope from position hash (avoids CPU neural net eval)
+            // Approximate slope
             let slope = sin(pos.x * 0.5 + time * 0.1) * cos(pos.y * 0.5) * 0.3
 
-            // Nearby creature density (within radius 3)
+            // Nearby creature scan (density + nearest + flock heading)
             var nearCount: Float = 0
             var nearestDist: Float = 999
             var nearestAngle: Float = 0
+            var flockSinSum: Float = 0
+            var flockCosSum: Float = 0
+            var flockCount: Float = 0
+
             for j in 0..<positions.count where j != i {
                 let d = simd_length(positions[j] - pos)
-                if d < 3.0 {
+                if d < 4.0 {
                     nearCount += 1
                     if d < nearestDist {
                         nearestDist = d
                         let toNearest = positions[j] - pos
                         let angle = atan2(toNearest.y, toNearest.x) - heading
-                        nearestAngle = sin(angle) // -1 to 1
+                        nearestAngle = sin(angle)
+                    }
+                    // Flock alignment: same species nearby
+                    if speciesIDs[j] == mySpecies && d < 5.0 {
+                        flockSinSum += sin(headings[j])
+                        flockCosSum += cos(headings[j])
+                        flockCount += 1
                     }
                 }
             }
             let density = min(nearCount / 8.0, 1.0)
 
-            // Player distance
-            let playerDist2D = simd_length(SIMD2<Float>(playerPosition.x, playerPosition.z) - pos)
-            let playerNorm = min(playerDist2D / 20.0, 1.0)
+            // Flock heading: difference between average flock heading and my heading
+            var flockHeading: Float = 0
+            if flockCount > 0 {
+                let avgHeading = atan2(flockSinSum / flockCount, flockCosSum / flockCount)
+                let diff = avgHeading - heading
+                flockHeading = sin(diff) // Normalized to [-1, 1]
+            }
 
-            // Food: procedural based on position (avoids CPU neural net eval)
+            // Player distance + panic
+            let playerDist2D = simd_length(playerPos2D - pos)
+            let playerNorm = min(playerDist2D / 20.0, 1.0)
+            let panic: Float = isInteracting ? max(0, 1.0 - playerDist2D / 12.0) : 0
+
+            // Food: procedural
             let foodNoise = sin(pos.x * 0.3 + time * 0.05) * cos(pos.y * 0.4 - time * 0.03)
             var foodValue: Float = max(0, foodNoise * 0.5 + 0.3)
-
-            // Player interaction creates food burst nearby
             if isInteracting && playerDist2D < 8.0 {
                 foodValue += (1.0 - playerDist2D / 8.0) * 0.5
             }
@@ -128,7 +148,9 @@ final class Ecosystem: ObservableObject {
                 playerDistance: playerNorm,
                 energyLevel: creatures[i].energy,
                 foodValue: foodValue,
-                nearestCreatureAngle: nearestAngle
+                nearestCreatureAngle: nearestAngle,
+                flockHeading: flockHeading,
+                panic: panic
             )
 
             creatures[i].step(inputs: inputs, deltaTime: simDT)
